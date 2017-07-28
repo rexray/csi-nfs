@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net"
+	"os"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,6 +16,10 @@ import (
 
 const (
 	name = "gocsi-nfs"
+
+	nodeEnvVar  = "NFSPLUGIN_NODEONLY"
+	ctlrEnvVar  = "NFSPLUGIN_CONTROLLERONLY"
+	debugEnvVar = "NFSPLUGIN_DEBUG"
 )
 
 var (
@@ -23,6 +28,10 @@ var (
 )
 
 func main() {
+	if _, d := os.LookupEnv(debugEnvVar); d {
+		log.SetLevel(log.DebugLevel)
+	}
+
 	l, err := csiutils.GetCSIEndpointListener()
 	if err != nil {
 		log.WithError(err).Fatal("failed to listen")
@@ -62,9 +71,30 @@ func (s *sp) Serve(ctx context.Context, li net.Listener) error {
 		return errServerStarted
 	}
 
+	// Always host the Indentity Service
 	csi.RegisterIdentityServer(s.server, s)
-	//csi.RegisterControllerServer(s.server, s)
-	//csi.RegisterNodeServer(s.server, s)
+
+	_, nodeSvc := os.LookupEnv(nodeEnvVar)
+	_, ctrlSvc := os.LookupEnv(ctlrEnvVar)
+
+	if nodeSvc && ctrlSvc {
+		log.Fatalf("Cannot specify both %s and %s",
+			nodeEnvVar, ctlrEnvVar)
+	}
+
+	switch {
+	case nodeSvc:
+		//csi.RegisterNodeServer(s.server, s)
+		//log.Debug("Added Node Service")
+	case ctrlSvc:
+		csi.RegisterControllerServer(s.server, s)
+		log.Debug("Added Controller Service")
+	default:
+		//csi.RegisterNodeServer(s.server, s)
+		//log.Debug("Added Node Service")
+		csi.RegisterControllerServer(s.server, s)
+		log.Debug("Added Controller Service")
+	}
 
 	// start the grpc server
 	if err := s.server.Serve(li); err != grpc.ErrServerStopped {
