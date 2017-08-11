@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"os/signal"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -28,9 +29,37 @@ var (
 )
 
 func main() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+
 	if _, d := os.LookupEnv(debugEnvVar); d {
 		log.SetLevel(log.DebugLevel)
 	}
+
+	s := &sp{name: name}
+
+	go func() {
+		_ = <-c
+		if s.server != nil {
+			s.Lock()
+			defer s.Unlock()
+			log.Info("Shutting down server")
+			s.server.GracefulStop()
+			s.closed = true
+
+			// make sure sock file got cleaned up
+			_, sock, _ := csiutils.GetCSIEndpoint()
+			if sock != "" {
+				if _, err := os.Stat(sock); !os.IsNotExist(err) {
+					s.server.Stop()
+					if err := os.Remove(sock); err != nil {
+						log.WithError(err).Warn(
+							"Unable to remove sock file")
+					}
+				}
+			}
+		}
+	}()
 
 	l, err := csiutils.GetCSIEndpointListener()
 	if err != nil {
@@ -39,10 +68,12 @@ func main() {
 
 	ctx := context.Background()
 
-	s := &sp{name: name}
-
 	if err := s.Serve(ctx, l); err != nil {
-		log.WithError(err).Fatal("grpc failed")
+		s.Lock()
+		defer s.Unlock()
+		if !s.closed {
+			log.WithError(err).Fatal("grpc failed")
+		}
 	}
 }
 
