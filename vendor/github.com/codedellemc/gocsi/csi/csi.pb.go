@@ -1027,7 +1027,7 @@ func _GetSupportedVersionsResponse_OneofSizer(msg proto.Message) (n int) {
 }
 
 type GetSupportedVersionsResponse_Result struct {
-	// All the versions that the Plugin supports. This field is
+	// All the CSI versions that the Plugin supports. This field is
 	// REQUIRED.
 	SupportedVersions []*Version `protobuf:"bytes,1,rep,name=supported_versions,json=supportedVersions" json:"supported_versions,omitempty"`
 }
@@ -1046,7 +1046,8 @@ func (m *GetSupportedVersionsResponse_Result) GetSupportedVersions() []*Version 
 	return nil
 }
 
-// Specifies the version in Semantic Version 2.0 format.
+// Specifies a version in Semantic Version 2.0 format.
+// (http://semver.org/spec/v2.0.0.html)
 type Version struct {
 	Major uint32 `protobuf:"varint,1,opt,name=major" json:"major,omitempty"`
 	Minor uint32 `protobuf:"varint,2,opt,name=minor" json:"minor,omitempty"`

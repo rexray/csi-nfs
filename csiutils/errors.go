@@ -3,7 +3,7 @@ package csiutils
 import (
 	"errors"
 
-	"github.com/codenrhoden/csi-nfs-plugin/csi"
+	"github.com/codedellemc/gocsi/csi"
 )
 
 // ErrMissingCSIEndpoint occurs when the value for the environment

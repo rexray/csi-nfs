@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"github.com/codenrhoden/csi-nfs-plugin/csi"
+	"github.com/codedellemc/gocsi/csi"
 	"github.com/codenrhoden/csi-nfs-plugin/csiutils"
 )
 

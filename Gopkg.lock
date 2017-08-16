@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/codedellemc/gocsi"
+  packages = ["csi"]
+  revision = "77a6745014ee816f03726822aaa4a02fc42bec30"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes/any"]
   revision = "748d386b5c1ea99658fd69fe9f03991ce86a90c1"
@@ -46,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "323061d1acf29e0de9cfd686b31a25bfb16915222713e071ff8735f2fb3bc5dc"
+  inputs-digest = "53d9cd6a1c7b7c6427efaa61025deb3196ff99135d2fb9bc478d7d48b15b0bc5"
   solver-name = "gps-cdcl"
   solver-version = 1

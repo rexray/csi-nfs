@@ -3,7 +3,7 @@ package main
 import (
 	"golang.org/x/net/context"
 
-	"github.com/codenrhoden/csi-nfs-plugin/csi"
+	"github.com/codedellemc/gocsi/csi"
 )
 
 func (s *sp) GetSupportedVersions(

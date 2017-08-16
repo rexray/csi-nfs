@@ -1,7 +1,7 @@
-// time: Thu Jul 27 15:48:24 MDT 2017
-// spec: container-storage-interface/spec:4c54118317a6cbf2734b9b1031dd6a862a83161b
+////////
 syntax = "proto3";
 package csi;
+////////
 ////////
 service Identity {
   rpc GetSupportedVersions (GetSupportedVersionsRequest)
@@ -60,7 +60,7 @@ message GetSupportedVersionsRequest {
 
 message GetSupportedVersionsResponse {
   message Result {
-    // All the versions that the Plugin supports. This field is
+    // All the CSI versions that the Plugin supports. This field is
     // REQUIRED.
     repeated Version supported_versions = 1;
   }
@@ -72,7 +72,8 @@ message GetSupportedVersionsResponse {
   }
 }
 
-// Specifies the version in Semantic Version 2.0 format.
+// Specifies a version in Semantic Version 2.0 format.
+// (http://semver.org/spec/v2.0.0.html)
 message Version {
   uint32 major = 1;  // This field is REQUIRED.
   uint32 minor = 2;  // This field is REQUIRED.
