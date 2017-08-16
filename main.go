@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"sync"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -115,16 +115,16 @@ func (s *sp) Serve(ctx context.Context, li net.Listener) error {
 
 	switch {
 	case nodeSvc:
-		//csi.RegisterNodeServer(s.server, s)
-		//log.Debug("Added Node Service")
+		csi.RegisterNodeServer(s.server, s)
+		log.Debug("Added Node Service")
 	case ctrlSvc:
 		csi.RegisterControllerServer(s.server, s)
 		log.Debug("Added Controller Service")
 	default:
-		//csi.RegisterNodeServer(s.server, s)
-		//log.Debug("Added Node Service")
 		csi.RegisterControllerServer(s.server, s)
 		log.Debug("Added Controller Service")
+		csi.RegisterNodeServer(s.server, s)
+		log.Debug("Added Node Service")
 	}
 
 	// start the grpc server

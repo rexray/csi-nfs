@@ -135,3 +135,66 @@ func ErrListVolumes(
 		},
 	}
 }
+
+// ErrProbeNode returns a
+// ProbeNodeResponse with a
+// ProbeNodeError.
+func ErrProbeNode(
+	code csi.Error_ProbeNodeError_ProbeNodeErrorCode,
+	msg string) *csi.ProbeNodeResponse {
+
+	return &csi.ProbeNodeResponse{
+		Reply: &csi.ProbeNodeResponse_Error{
+			Error: &csi.Error{
+				Value: &csi.Error_ProbeNodeError_{
+					ProbeNodeError: &csi.Error_ProbeNodeError{
+						ErrorCode:        code,
+						ErrorDescription: msg,
+					},
+				},
+			},
+		},
+	}
+}
+
+// ErrNodePublishVolume returns a
+// NodePublishVolumeResponse with a
+// NodePublishVolumeError.
+func ErrNodePublishVolume(
+	code csi.Error_NodePublishVolumeError_NodePublishVolumeErrorCode,
+	msg string) *csi.NodePublishVolumeResponse {
+
+	return &csi.NodePublishVolumeResponse{
+		Reply: &csi.NodePublishVolumeResponse_Error{
+			Error: &csi.Error{
+				Value: &csi.Error_NodePublishVolumeError_{
+					NodePublishVolumeError: &csi.Error_NodePublishVolumeError{
+						ErrorCode:        code,
+						ErrorDescription: msg,
+					},
+				},
+			},
+		},
+	}
+}
+
+// ErrNodeUnpublishVolume returns a
+// NodeUnpublishVolumeResponse with a
+// NodeUnpublishVolumeError.
+func ErrNodeUnpublishVolume(
+	code csi.Error_NodeUnpublishVolumeError_NodeUnpublishVolumeErrorCode,
+	msg string) *csi.NodeUnpublishVolumeResponse {
+
+	return &csi.NodeUnpublishVolumeResponse{
+		Reply: &csi.NodeUnpublishVolumeResponse_Error{
+			Error: &csi.Error{
+				Value: &csi.Error_NodeUnpublishVolumeError_{
+					NodeUnpublishVolumeError: &csi.Error_NodeUnpublishVolumeError{
+						ErrorCode:        code,
+						ErrorDescription: msg,
+					},
+				},
+			},
+		},
+	}
+}
