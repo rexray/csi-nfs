@@ -3,8 +3,8 @@ package main
 import (
 	"golang.org/x/net/context"
 
+	"github.com/codedellemc/gocsi"
 	"github.com/codedellemc/gocsi/csi"
-	"github.com/codenrhoden/csi-nfs-plugin/csiutils"
 )
 
 func (s *sp) ControllerGetCapabilities(
@@ -36,7 +36,7 @@ func (s *sp) CreateVolume(
 	ctx context.Context,
 	in *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 
-	return csiutils.ErrCreateVolume(
+	return gocsi.ErrCreateVolume(
 		csi.Error_CreateVolumeError_CALL_NOT_IMPLEMENTED,
 		"CreateVolume not valid for NFS"), nil
 }
@@ -45,7 +45,7 @@ func (s *sp) DeleteVolume(
 	ctx context.Context,
 	in *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 
-	return csiutils.ErrDeleteVolume(
+	return gocsi.ErrDeleteVolume(
 		csi.Error_DeleteVolumeError_CALL_NOT_IMPLEMENTED,
 		"DeleteVolume not valid for NFS"), nil
 }
@@ -54,7 +54,7 @@ func (s *sp) ControllerPublishVolume(
 	ctx context.Context,
 	in *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 
-	return csiutils.ErrControllerPublishVolume(
+	return gocsi.ErrControllerPublishVolume(
 		csi.Error_ControllerPublishVolumeError_CALL_NOT_IMPLEMENTED,
 		"ControllerPublishVolume not valid for NFS"), nil
 }
@@ -63,7 +63,7 @@ func (s *sp) ControllerUnpublishVolume(
 	ctx context.Context,
 	in *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 
-	return csiutils.ErrControllerUnpublishVolume(
+	return gocsi.ErrControllerUnpublishVolume(
 		csi.Error_ControllerUnpublishVolumeError_CALL_NOT_IMPLEMENTED,
 		"ControllerUnpublishVolume not valid for NFS"), nil
 }
@@ -105,7 +105,7 @@ func (s *sp) ListVolumes(
 	ctx context.Context,
 	in *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 
-	return csiutils.ErrListVolumes(
+	return gocsi.ErrListVolumes(
 		csi.Error_GeneralError_UNDEFINED,
 		"ListVolumes not implemented for NFS"), nil
 }
@@ -114,7 +114,7 @@ func (s *sp) GetCapacity(
 	ctx context.Context,
 	in *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 
-	return csiutils.ErrGetCapacity(
+	return gocsi.ErrGetCapacity(
 		csi.Error_GeneralError_UNDEFINED,
 		"GetCapacity not implemented for NFS"), nil
 }

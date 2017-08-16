@@ -3,8 +3,9 @@ package main
 import (
 	"golang.org/x/net/context"
 
+	"github.com/codedellemc/gocsi"
 	"github.com/codedellemc/gocsi/csi"
-	"github.com/codenrhoden/csi-nfs-plugin/csiutils"
+
 	"github.com/codenrhoden/csi-nfs-plugin/nfs"
 )
 
@@ -23,14 +24,14 @@ func (s *sp) NodePublishVolume(
 
 	host, ok := idm["host"]
 	if !ok {
-		return csiutils.ErrNodePublishVolume(
+		return gocsi.ErrNodePublishVolume(
 			csi.Error_NodePublishVolumeError_INVALID_VOLUME_ID,
 			"host key missing from volumeID"), nil
 	}
 
 	export, ok := idm["export"]
 	if !ok {
-		return csiutils.ErrNodePublishVolume(
+		return gocsi.ErrNodePublishVolume(
 			csi.Error_NodePublishVolumeError_INVALID_VOLUME_ID,
 			"export key missing from volumeID"), nil
 	}
@@ -38,7 +39,7 @@ func (s *sp) NodePublishVolume(
 	src := host + ":" + export
 
 	if err := nfs.Mount(src, target, opts); err != nil {
-		return csiutils.ErrNodePublishVolume(
+		return gocsi.ErrNodePublishVolume(
 			csi.Error_NodePublishVolumeError_MOUNT_ERROR,
 			err.Error()), nil
 	}
@@ -57,7 +58,7 @@ func (s *sp) NodeUnpublishVolume(
 	target := in.GetTargetPath()
 
 	if err := nfs.Unmount(target); err != nil {
-		return csiutils.ErrNodeUnpublishVolume(
+		return gocsi.ErrNodeUnpublishVolume(
 			csi.Error_NodeUnpublishVolumeError_UNMOUNT_ERROR,
 			err.Error()), nil
 	}
@@ -87,7 +88,7 @@ func (s *sp) ProbeNode(
 	in *csi.ProbeNodeRequest) (*csi.ProbeNodeResponse, error) {
 
 	if err := nfs.Supported(); err != nil {
-		return csiutils.ErrProbeNode(
+		return gocsi.ErrProbeNode(
 			csi.Error_ProbeNodeError_MISSING_REQUIRED_HOST_DEPENDENCY,
 			err.Error()), nil
 	}

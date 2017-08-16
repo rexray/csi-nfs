@@ -11,8 +11,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	"github.com/codedellemc/gocsi"
 	"github.com/codedellemc/gocsi/csi"
-	"github.com/codenrhoden/csi-nfs-plugin/csiutils"
 )
 
 const (
@@ -48,11 +48,11 @@ func main() {
 			s.closed = true
 
 			// make sure sock file got cleaned up
-			_, sock, _ := csiutils.GetCSIEndpoint()
-			if sock != "" {
-				if _, err := os.Stat(sock); !os.IsNotExist(err) {
+			proto, addr, _ := gocsi.GetCSIEndpoint()
+			if proto == "unix" && addr != "" {
+				if _, err := os.Stat(addr); !os.IsNotExist(err) {
 					s.server.Stop()
-					if err := os.Remove(sock); err != nil {
+					if err := os.Remove(addr); err != nil {
 						log.WithError(err).Warn(
 							"Unable to remove sock file")
 					}
@@ -61,7 +61,7 @@ func main() {
 		}
 	}()
 
-	l, err := csiutils.GetCSIEndpointListener()
+	l, err := gocsi.GetCSIEndpointListener()
 	if err != nil {
 		log.WithError(err).Fatal("failed to listen")
 	}

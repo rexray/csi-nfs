@@ -4,7 +4,7 @@
 [[projects]]
   branch = "master"
   name = "github.com/codedellemc/gocsi"
-  packages = ["csi"]
+  packages = [".","csi"]
   revision = "77a6745014ee816f03726822aaa4a02fc42bec30"
 
 [[projects]]
@@ -52,6 +52,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "53d9cd6a1c7b7c6427efaa61025deb3196ff99135d2fb9bc478d7d48b15b0bc5"
+  inputs-digest = "49cd73083b4cfa2266cd1727e9762706c8a5668dcafefa2a1835d90f8465a89f"
   solver-name = "gps-cdcl"
   solver-version = 1
