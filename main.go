@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	name = "gocsi-nfs"
+	name = "csi-nfs"
 
 	nodeEnvVar  = "NFSPLUGIN_NODEONLY"
 	ctlrEnvVar  = "NFSPLUGIN_CONTROLLERONLY"

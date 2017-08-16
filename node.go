@@ -6,7 +6,7 @@ import (
 	"github.com/codedellemc/gocsi"
 	"github.com/codedellemc/gocsi/csi"
 
-	"github.com/codenrhoden/csi-nfs-plugin/nfs"
+	"github.com/codenrhoden/csi-nfs/nfs"
 )
 
 func (s *sp) NodePublishVolume(
