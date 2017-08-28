@@ -2,21 +2,17 @@
 # for detailed Gopkg.toml documentation.
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/golang/protobuf"
-
-[[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "1.0.2"
 
 [[constraint]]
-  branch = "master"
   name = "golang.org/x/net"
+  branch = "master"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.5.1"
+  version = "1.5.2"
 
 [[constraint]]
-  branch = "master"
   name = "github.com/codedellemc/gocsi"
+  revision = "996f4bd357b3f628be6cfc8a5ffcf67f9345b0a1"
