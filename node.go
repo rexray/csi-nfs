@@ -107,19 +107,7 @@ func (s *sp) NodeGetCapabilities(
 	return &csi.NodeGetCapabilitiesResponse{
 		Reply: &csi.NodeGetCapabilitiesResponse_Result_{
 			Result: &csi.NodeGetCapabilitiesResponse_Result{
-				Capabilities: []*csi.NodeServiceCapability{
-					&csi.NodeServiceCapability{
-						Type: &csi.NodeServiceCapability_VolumeCapability{
-							VolumeCapability: &csi.VolumeCapability{
-								Value: &csi.VolumeCapability_Mount{
-									Mount: &csi.VolumeCapability_MountVolume{
-										FsType: "nfs",
-									},
-								},
-							},
-						},
-					},
-				},
+				Capabilities: []*csi.NodeServiceCapability{},
 			},
 		},
 	}, nil

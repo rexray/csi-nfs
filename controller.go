@@ -14,19 +14,7 @@ func (s *sp) ControllerGetCapabilities(
 	return &csi.ControllerGetCapabilitiesResponse{
 		Reply: &csi.ControllerGetCapabilitiesResponse_Result_{
 			Result: &csi.ControllerGetCapabilitiesResponse_Result{
-				Capabilities: []*csi.ControllerServiceCapability{
-					&csi.ControllerServiceCapability{
-						Type: &csi.ControllerServiceCapability_VolumeCapability{
-							VolumeCapability: &csi.VolumeCapability{
-								Value: &csi.VolumeCapability_Mount{
-									Mount: &csi.VolumeCapability_MountVolume{
-										FsType: "nfs",
-									},
-								},
-							},
-						},
-					},
-				},
+				Capabilities: []*csi.ControllerServiceCapability{},
 			},
 		},
 	}, nil

@@ -160,6 +160,30 @@ $(GOCSI_A): $(CSI_GOSRC) *.go csi/*.go
 	@go install .
 	go build -o "$@" .
 
+
+########################################################################
+##                               TEST                                 ##
+########################################################################
+GINKGO := ./ginkgo
+GINKGO_PKG := ./vendor/github.com/onsi/ginkgo/ginkgo
+$(GINKGO):
+	go build -o "$@" $(GINKGO_PKG)
+
+# The test recipe executes the Go tests with the Ginkgo test
+# runner. This is the reason for the boolean OR condition
+# that is part of the test script. The condition allows for
+# the test run to exit with a status set to the value Ginkgo
+# uses if it detects programmatic involvement. Please see
+# https://goo.gl/CKz4La for more information.
+ifneq (true,$(TRAVIS))
+test: build
+endif
+test: | $(GINKGO)
+	$(GINKGO) -v . || test "$$?" -eq "197"
+
+.PHONY: test
+
+
 ########################################################################
 ##                               BUILD                                ##
 ########################################################################
@@ -182,4 +206,4 @@ clobber: clean
 glide-up glide-install:
 	glide $(@:glide-%=%) -v
 
-.PHONY: clean clobber glide-up glide-install
+.PHONY: build test clean clobber glide-up glide-install

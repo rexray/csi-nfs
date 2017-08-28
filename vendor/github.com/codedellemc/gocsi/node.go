@@ -1,9 +1,6 @@
 package gocsi
 
 import (
-	"errors"
-	"fmt"
-
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -11,22 +8,34 @@ import (
 )
 
 const (
-	fmNodePfx = "/" + Namespace + ".Node/"
-
-	// FMNodePublishVolume is the eponymous, full method name.
-	FMNodePublishVolume = fmNodePfx +
-		"NodePublishVolume"
-	// FMNodeUnpublishVolume is the eponymous, full method name.
-	FMNodeUnpublishVolume = fmNodePfx +
-		"NodeUnpublishVolume"
-	// FMGetNodeID is the eponymous, full method name.
-	FMGetNodeID = fmNodePfx +
+	// FMGetNodeID is the full method name for the
+	// eponymous RPC message.
+	FMGetNodeID = "/" + Namespace +
+		".Node/" +
 		"GetNodeID"
-	// FMProbeNode is the eponymous, full method name.
-	FMProbeNode = fmNodePfx +
+
+	// FMNodePublishVolume is the full method name for the
+	// eponymous RPC message.
+	FMNodePublishVolume = "/" + Namespace +
+		".Node/" +
+		"NodePublishVolume"
+
+	// FMNodeUnpublishVolume is the full method name for the
+	// eponymous RPC message.
+	FMNodeUnpublishVolume = "/" + Namespace +
+		".Node/" +
+		"NodeUnpublishVolume"
+
+	// FMProbeNode is the full method name for the
+	// eponymous RPC message.
+	FMProbeNode = "/" + Namespace +
+		".Node/" +
 		"ProbeNode"
-	// FMNodeGetCapabilities is the eponymous, full method name.
-	FMNodeGetCapabilities = fmNodePfx +
+
+	// FMNodeGetCapabilities is the full method name for the
+	// eponymous RPC message.
+	FMNodeGetCapabilities = "/" + Namespace +
+		".Node/" +
 		"NodeGetCapabilities"
 )
 
@@ -39,10 +48,6 @@ func GetNodeID(
 	version *csi.Version,
 	callOpts ...grpc.CallOption) (*csi.NodeID, error) {
 
-	if version == nil {
-		return nil, ErrVersionRequired
-	}
-
 	req := &csi.GetNodeIDRequest{
 		Version: version,
 	}
@@ -52,34 +57,7 @@ func GetNodeID(
 		return nil, err
 	}
 
-	// check to see if there is a csi error
-	if cerr := res.GetError(); cerr != nil {
-		if err := cerr.GetGetNodeIdError(); err != nil {
-			return nil, fmt.Errorf(
-				"error: GetNodeID failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		if err := cerr.GetGeneralError(); err != nil {
-			return nil, fmt.Errorf(
-				"error: GetNodeID failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		return nil, errors.New(cerr.String())
-	}
-
-	result := res.GetResult()
-	if result == nil {
-		return nil, ErrNilResult
-	}
-
-	data := result.GetNodeId()
-	if data == nil {
-		return nil, ErrNilNodeID
-	}
-
-	return data, nil
+	return res.GetResult().NodeId, nil
 }
 
 // NodePublishVolume issues a
@@ -97,22 +75,6 @@ func NodePublishVolume(
 	readonly bool,
 	callOpts ...grpc.CallOption) error {
 
-	if version == nil {
-		return ErrVersionRequired
-	}
-
-	if volumeID == nil {
-		return ErrVolumeIDRequired
-	}
-
-	if volumeCapability == nil {
-		return ErrVolumeCapabilityRequired
-	}
-
-	if targetPath == "" {
-		return ErrInvalidTargetPath
-	}
-
 	req := &csi.NodePublishVolumeRequest{
 		Version:           version,
 		VolumeId:          volumeID,
@@ -123,31 +85,9 @@ func NodePublishVolume(
 		Readonly:          readonly,
 	}
 
-	res, err := c.NodePublishVolume(ctx, req, callOpts...)
+	_, err := c.NodePublishVolume(ctx, req, callOpts...)
 	if err != nil {
 		return err
-	}
-
-	// check to see if there is a csi error
-	if cerr := res.GetError(); cerr != nil {
-		if err := cerr.GetNodePublishVolumeError(); err != nil {
-			return fmt.Errorf(
-				"error: NodePublishVolume failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		if err := cerr.GetGeneralError(); err != nil {
-			return fmt.Errorf(
-				"error: NodePublishVolume failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		return errors.New(cerr.String())
-	}
-
-	result := res.GetResult()
-	if result == nil {
-		return ErrNilResult
 	}
 
 	return nil
@@ -165,18 +105,6 @@ func NodeUnpublishVolume(
 	targetPath string,
 	callOpts ...grpc.CallOption) error {
 
-	if version == nil {
-		return ErrVersionRequired
-	}
-
-	if volumeID == nil {
-		return ErrVolumeIDRequired
-	}
-
-	if targetPath == "" {
-		return ErrInvalidTargetPath
-	}
-
 	req := &csi.NodeUnpublishVolumeRequest{
 		Version:        version,
 		VolumeId:       volumeID,
@@ -184,31 +112,9 @@ func NodeUnpublishVolume(
 		TargetPath:     targetPath,
 	}
 
-	res, err := c.NodeUnpublishVolume(ctx, req, callOpts...)
+	_, err := c.NodeUnpublishVolume(ctx, req, callOpts...)
 	if err != nil {
 		return err
-	}
-
-	// check to see if there is a csi error
-	if cerr := res.GetError(); cerr != nil {
-		if err := cerr.GetNodeUnpublishVolumeError(); err != nil {
-			return fmt.Errorf(
-				"error: NodeUnpublishVolume failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		if err := cerr.GetGeneralError(); err != nil {
-			return fmt.Errorf(
-				"error: NodeUnpublishVolume failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		return errors.New(cerr.String())
-	}
-
-	result := res.GetResult()
-	if result == nil {
-		return ErrNilResult
 	}
 
 	return nil
@@ -223,34 +129,13 @@ func ProbeNode(
 	version *csi.Version,
 	callOpts ...grpc.CallOption) error {
 
-	if version == nil {
-		return ErrVersionRequired
-	}
-
 	req := &csi.ProbeNodeRequest{
 		Version: version,
 	}
 
-	res, err := c.ProbeNode(ctx, req, callOpts...)
+	_, err := c.ProbeNode(ctx, req, callOpts...)
 	if err != nil {
 		return err
-	}
-
-	// check to see if there is a csi error
-	if cerr := res.GetError(); cerr != nil {
-		if err := cerr.GetProbeNodeError(); err != nil {
-			return fmt.Errorf(
-				"error: ProbeNode failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		if err := cerr.GetGeneralError(); err != nil {
-			return fmt.Errorf(
-				"error: ProbeNode failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		return errors.New(cerr.String())
 	}
 
 	return nil
@@ -265,10 +150,6 @@ func NodeGetCapabilities(
 	callOpts ...grpc.CallOption) (
 	capabilties []*csi.NodeServiceCapability, err error) {
 
-	if version == nil {
-		return nil, ErrVersionRequired
-	}
-
 	req := &csi.NodeGetCapabilitiesRequest{
 		Version: version,
 	}
@@ -278,21 +159,5 @@ func NodeGetCapabilities(
 		return nil, err
 	}
 
-	// check to see if there is a csi error
-	if cerr := res.GetError(); cerr != nil {
-		if err := cerr.GetGeneralError(); err != nil {
-			return nil, fmt.Errorf(
-				"error: NodeGetCapabilities failed: %d: %s",
-				err.GetErrorCode(),
-				err.GetErrorDescription())
-		}
-		return nil, errors.New(cerr.String())
-	}
-
-	result := res.GetResult()
-	if result == nil {
-		return nil, ErrNilResult
-	}
-
-	return result.GetCapabilities(), nil
+	return res.GetResult().Capabilities, nil
 }

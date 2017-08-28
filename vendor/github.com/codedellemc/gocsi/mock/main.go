@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"net"
@@ -125,23 +127,15 @@ type sp struct {
 	closed bool
 }
 
-func getServerInterceptors() grpc.ServerOption {
-
-	// Create a new server-side input validator. It will be
-	// initialized with sensible defaults, but it is possible to
-	// replace the validation logic per-message by replacing
-	// the key/value pair in the validator's map using
-	// gocsi.FMxxx values as the key and a
-	// gocsi.ServerSideInputValidatorFunc as the value.
-	serverSideInputValidator := gocsi.NewServerSideInputValidator()
-
-	// Create a new server-side interceptor that logs incoming msgs.
-	serverSideMsgLogger := &gocsi.ServerSideMessageLogger{Log: louti.Printf}
-
-	return gocsi.ChainUnaryServerOpt(
-		gocsi.RequestIDInjector,
-		serverSideMsgLogger.Handle,
-		serverSideInputValidator.Handle)
+func newGrpcServer() *grpc.Server {
+	lout := newLogger(louti.Printf)
+	lerr := newLogger(lerre.Printf)
+	return grpc.NewServer(grpc.UnaryInterceptor(gocsi.ChainUnaryServer(
+		gocsi.ServerRequestIDInjector,
+		gocsi.NewServerRequestLogger(lout, lerr),
+		gocsi.NewServerResponseLogger(lout, lerr),
+		gocsi.NewServerRequestVersionValidator(supportedVersions),
+		gocsi.ServerRequestValidator)))
 }
 
 // ServiceProvider.Serve
@@ -156,7 +150,7 @@ func (s *sp) Serve(ctx context.Context, li net.Listener) error {
 			return errServerStarted
 		}
 		louti.Printf("%s.Serve: %s\n", s.name, li.Addr())
-		s.server = grpc.NewServer(getServerInterceptors())
+		s.server = newGrpcServer()
 		return nil
 	}(); err != nil {
 		return errServerStarted
@@ -216,13 +210,16 @@ func (s *sp) CreateVolume(
 	// the creation process is idempotent: if the volume
 	// does not already exist then create it, otherwise
 	// just return the existing volume
-	name := req.GetName()
+	name := req.Name
 	_, v := findVolByName(name)
 	if v == nil {
 		capacity := gib100
-		if cr := req.GetCapacityRange(); cr != nil {
-			if rb := cr.GetRequiredBytes(); rb != 0 {
+		if cr := req.CapacityRange; cr != nil {
+			if rb := cr.RequiredBytes; rb > 0 {
 				capacity = rb
+			}
+			if lb := cr.LimitBytes; lb > 0 {
+				capacity = lb
 			}
 		}
 		v = newVolume(name, capacity)
@@ -245,19 +242,7 @@ func (s *sp) DeleteVolume(
 	req *csi.DeleteVolumeRequest) (
 	*csi.DeleteVolumeResponse, error) {
 
-	idObj := req.GetVolumeId()
-	if idObj == nil {
-		// INVALID_VOLUME_ID
-		return gocsi.ErrDeleteVolume(3, "missing id obj"), nil
-	}
-
-	idVals := idObj.GetValues()
-	if len(idVals) == 0 {
-		// INVALID_VOLUME_ID
-		return gocsi.ErrDeleteVolume(3, "missing id map"), nil
-	}
-
-	id, ok := idVals["id"]
+	id, ok := req.VolumeId.Values["id"]
 	if !ok {
 		// INVALID_VOLUME_ID
 		return gocsi.ErrDeleteVolume(3, "missing id val"), nil
@@ -276,7 +261,11 @@ func (s *sp) DeleteVolume(
 		vols = vols[:len(vols)-1]
 	}
 
-	return nil, nil
+	return &csi.DeleteVolumeResponse{
+		Reply: &csi.DeleteVolumeResponse_Result_{
+			Result: &csi.DeleteVolumeResponse_Result{},
+		},
+	}, nil
 }
 
 func (s *sp) ControllerPublishVolume(
@@ -437,7 +426,14 @@ func (s *sp) ValidateVolumeCapabilities(
 	req *csi.ValidateVolumeCapabilitiesRequest) (
 	*csi.ValidateVolumeCapabilitiesResponse, error) {
 
-	return nil, nil
+	return &csi.ValidateVolumeCapabilitiesResponse{
+		Reply: &csi.ValidateVolumeCapabilitiesResponse_Result_{
+			Result: &csi.ValidateVolumeCapabilitiesResponse_Result{
+				Supported: true,
+				Message:   "Yip yip yip yip!",
+			},
+		},
+	}, nil
 }
 
 func (s *sp) ListVolumes(
@@ -564,6 +560,29 @@ func (s *sp) ControllerGetCapabilities(
 //                             Identity Service                               //
 ////////////////////////////////////////////////////////////////////////////////
 
+var supportedVersions = []*csi.Version{
+	&csi.Version{
+		Major: 0,
+		Minor: 1,
+		Patch: 0,
+	},
+	&csi.Version{
+		Major: 0,
+		Minor: 2,
+		Patch: 0,
+	},
+	&csi.Version{
+		Major: 1,
+		Minor: 0,
+		Patch: 0,
+	},
+	&csi.Version{
+		Major: 1,
+		Minor: 1,
+		Patch: 0,
+	},
+}
+
 func (s *sp) GetSupportedVersions(
 	ctx context.Context,
 	req *csi.GetSupportedVersionsRequest) (
@@ -572,13 +591,7 @@ func (s *sp) GetSupportedVersions(
 	return &csi.GetSupportedVersionsResponse{
 		Reply: &csi.GetSupportedVersionsResponse_Result_{
 			Result: &csi.GetSupportedVersionsResponse_Result{
-				SupportedVersions: []*csi.Version{
-					&csi.Version{
-						Major: 0,
-						Minor: 1,
-						Patch: 0,
-					},
-				},
+				SupportedVersions: supportedVersions,
 			},
 		},
 	}, nil
@@ -593,7 +606,7 @@ func (s *sp) GetPluginInfo(
 		Reply: &csi.GetPluginInfoResponse_Result_{
 			Result: &csi.GetPluginInfoResponse_Result{
 				Name:          s.name,
-				VendorVersion: "0.1.0",
+				VendorVersion: gocsi.SprintfVersion(req.Version),
 				Manifest:      nil,
 			},
 		},
@@ -730,18 +743,9 @@ func (s *sp) NodeGetCapabilities(
 			Result: &csi.NodeGetCapabilitiesResponse_Result{
 				Capabilities: []*csi.NodeServiceCapability{
 					&csi.NodeServiceCapability{
-						Type: &csi.NodeServiceCapability_VolumeCapability{
-							VolumeCapability: &csi.VolumeCapability{
-								Value: &csi.VolumeCapability_Mount{
-									Mount: &csi.VolumeCapability_MountVolume{
-										FsType: "ext4",
-										MountFlags: []string{
-											"norootsquash",
-											"uid=500",
-											"gid=500",
-										},
-									},
-								},
+						Type: &csi.NodeServiceCapability_Rpc{
+							Rpc: &csi.NodeServiceCapability_RPC{
+								Type: csi.NodeServiceCapability_RPC_UNKNOWN,
 							},
 						},
 					},
@@ -838,4 +842,26 @@ func findVol(field, val string) (int, *csi.VolumeInfo) {
 		}
 	}
 	return -1, nil
+}
+
+type logger struct {
+	f func(msg string, args ...interface{})
+	w io.Writer
+}
+
+func newLogger(f func(msg string, args ...interface{})) *logger {
+	l := &logger{f: f}
+	r, w := io.Pipe()
+	l.w = w
+	go func() {
+		scan := bufio.NewScanner(r)
+		for scan.Scan() {
+			f(scan.Text())
+		}
+	}()
+	return l
+}
+
+func (l *logger) Write(data []byte) (int, error) {
+	return l.w.Write(data)
 }

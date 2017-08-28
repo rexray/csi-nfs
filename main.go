@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	name = "csi-nfs"
+	spName = "csi-nfs"
 
 	nodeEnvVar  = "NFSPLUGIN_NODEONLY"
 	ctlrEnvVar  = "NFSPLUGIN_CONTROLLERONLY"
@@ -24,8 +24,16 @@ const (
 )
 
 var (
-	errServerStarted = errors.New(name + ": the server has been started")
-	errServerStopped = errors.New(name + ": the server has been stopped")
+	errServerStarted = errors.New(spName + ": the server has been started")
+	errServerStopped = errors.New(spName + ": the server has been stopped")
+
+	CSIVersions = []*csi.Version{
+		&csi.Version{
+			Major: 0,
+			Minor: 1,
+			Patch: 0,
+		},
+	}
 )
 
 func main() {
@@ -36,7 +44,7 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	s := &sp{name: name}
+	s := &sp{name: spName}
 
 	go func() {
 		_ = <-c
@@ -96,13 +104,18 @@ func (s *sp) Serve(ctx context.Context, li net.Listener) error {
 		if s.server != nil {
 			return errServerStarted
 		}
-		s.server = grpc.NewServer()
+		s.server = grpc.NewServer(grpc.UnaryInterceptor(gocsi.ChainUnaryServer(
+			gocsi.ServerRequestIDInjector,
+			gocsi.NewServerRequestLogger(os.Stdout, os.Stderr),
+			gocsi.NewServerResponseLogger(os.Stdout, os.Stderr),
+			gocsi.NewServerRequestVersionValidator(CSIVersions),
+			gocsi.ServerRequestValidator)))
 		return nil
 	}(); err != nil {
 		return errServerStarted
 	}
 
-	// Always host the Indentity Service
+	// Always host the Identity Service
 	csi.RegisterIdentityServer(s.server, s)
 
 	_, nodeSvc := os.LookupEnv(nodeEnvVar)

@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 	"regexp"
+
+	"github.com/codedellemc/gocsi/csi"
 )
 
 // Version is a type that responds with Major, Minor, and Patch
@@ -13,6 +15,28 @@ type Version interface {
 	GetMajor() uint32
 	GetMinor() uint32
 	GetPatch() uint32
+}
+
+const maxuint32 = 4294967295
+
+// ParseVersion parses any string that matches \d+\.\d+\.\d+ and
+// returns a Version.
+func ParseVersion(s string) (Version, error) {
+	var major uint32
+	var minor uint32
+	var patch uint32
+	n, err := fmt.Sscanf(s, "%d.%d.%d", &major, &minor, &patch)
+	if err != nil {
+		return nil, err
+	}
+	if n != 3 {
+		return nil, fmt.Errorf("error: parsed %d vals", n)
+	}
+	return &csi.Version{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}, nil
 }
 
 // SprintfVersion formats a Version as a string.
@@ -62,7 +86,7 @@ func CompareVersions(a, b Version) int8 {
 // GetCSIEndpoint returns the network address specified by the
 // environment variable CSI_ENDPOINT.
 func GetCSIEndpoint() (network, addr string, err error) {
-	protoAddr := os.Getenv("CSI_ENDPOINT")
+	protoAddr := os.Getenv(CSIEndpoint)
 	if protoAddr == "" {
 		return "", "", ErrMissingCSIEndpoint
 	}

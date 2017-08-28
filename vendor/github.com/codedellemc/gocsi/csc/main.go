@@ -25,13 +25,19 @@ import (
 const (
 	// defaultVersion is the default CSI_VERSION string if none
 	// is provided via a CLI argument or environment variable
-	defaultVersion = "0.0.0"
+	defaultVersion = "0.1.0"
 
 	// maxUint32 is the maximum value for a uint32. this is
 	// defined as math.MaxUint32, but it's redefined here
 	// in order to avoid importing the math package for just
 	// a constant value
 	maxUint32 = 4294967295
+
+	// maxInt32 is the maximum value for an int32. this is
+	// defined as math.MaxInt32, but it's redefined here
+	// in order to avoid importing the math package for just
+	// a constant value
+	maxInt32 = 2147483647
 )
 
 var appName = path.Base(os.Args[0])
@@ -132,7 +138,7 @@ func main() {
 	}
 
 	// initialize a grpc client
-	gclient, err := newGrpcClient(ctx)
+	gclient, err := newGrpcClient(ctx, args.endpoint, args.insecure)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -153,6 +159,32 @@ func main() {
 		}
 		os.Exit(1)
 	}
+}
+
+func newGrpcClient(
+	ctx context.Context,
+	endpoint string,
+	insecure bool) (*grpc.ClientConn, error) {
+
+	dialOpts := []grpc.DialOption{
+		grpc.WithUnaryInterceptor(gocsi.ChainUnaryClient(
+			gocsi.ClientCheckReponseError,
+			gocsi.ClientResponseValidator)),
+		grpc.WithDialer(
+			func(target string, timeout time.Duration) (net.Conn, error) {
+				proto, addr, err := gocsi.ParseProtoAddr(target)
+				if err != nil {
+					return nil, err
+				}
+				return net.DialTimeout(proto, addr, timeout)
+			}),
+	}
+
+	if insecure {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+	}
+
+	return grpc.DialContext(ctx, endpoint, dialOpts...)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -297,28 +329,6 @@ func flagsGlobal(
 		"format",
 		formatDefault,
 		fmtMsg.String())
-}
-
-// newGrpcClient should not be invoked until after flags are parsed
-func newGrpcClient(ctx context.Context) (*grpc.ClientConn, error) {
-	// the grpc dialer *assumes* tcp, which is silly. this custom
-	// dialer parses the network protocol from a fully-formed golang
-	// network string and defers the dialing to net.DialTimeout
-	endpoint := args.endpoint
-	dialOpts := []grpc.DialOption{
-		grpc.WithDialer(
-			func(target string, timeout time.Duration) (net.Conn, error) {
-				proto, addr, err := gocsi.ParseProtoAddr(target)
-				if err != nil {
-					return nil, err
-				}
-				return net.DialTimeout(proto, addr, timeout)
-			}),
-	}
-	if args.insecure {
-		dialOpts = append(dialOpts, grpc.WithInsecure())
-	}
-	return grpc.DialContext(ctx, endpoint, dialOpts...)
 }
 
 // stringSliceArg is used for parsing a csv arg into a string slice
