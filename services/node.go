@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"golang.org/x/net/context"
@@ -9,7 +9,7 @@ import (
 	"github.com/codedellemc/csi-nfs/nfs"
 )
 
-func (s *sp) NodePublishVolume(
+func (s *StoragePlugin) NodePublishVolume(
 	ctx context.Context,
 	in *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 
@@ -51,7 +51,7 @@ func (s *sp) NodePublishVolume(
 	}, nil
 }
 
-func (s *sp) NodeUnpublishVolume(
+func (s *StoragePlugin) NodeUnpublishVolume(
 	ctx context.Context,
 	in *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 
@@ -70,7 +70,7 @@ func (s *sp) NodeUnpublishVolume(
 	}, nil
 }
 
-func (s *sp) GetNodeID(
+func (s *StoragePlugin) GetNodeID(
 	ctx context.Context,
 	in *csi.GetNodeIDRequest) (*csi.GetNodeIDResponse, error) {
 
@@ -83,7 +83,7 @@ func (s *sp) GetNodeID(
 	}, nil
 }
 
-func (s *sp) ProbeNode(
+func (s *StoragePlugin) ProbeNode(
 	ctx context.Context,
 	in *csi.ProbeNodeRequest) (*csi.ProbeNodeResponse, error) {
 
@@ -100,7 +100,7 @@ func (s *sp) ProbeNode(
 	}, nil
 }
 
-func (s *sp) NodeGetCapabilities(
+func (s *StoragePlugin) NodeGetCapabilities(
 	ctx context.Context,
 	in *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 

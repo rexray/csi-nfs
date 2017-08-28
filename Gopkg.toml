@@ -16,3 +16,7 @@
 [[constraint]]
   name = "github.com/codedellemc/gocsi"
   revision = "996f4bd357b3f628be6cfc8a5ffcf67f9345b0a1"
+
+[[constraint]]
+  name = "github.com/codedellemc/goioc"
+  version = "0.1.1"

@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"golang.org/x/net/context"
@@ -7,7 +7,7 @@ import (
 	"github.com/codedellemc/gocsi/csi"
 )
 
-func (s *sp) ControllerGetCapabilities(
+func (s *StoragePlugin) ControllerGetCapabilities(
 	ctx context.Context,
 	in *csi.ControllerGetCapabilitiesRequest) (*csi.ControllerGetCapabilitiesResponse, error) {
 
@@ -20,7 +20,7 @@ func (s *sp) ControllerGetCapabilities(
 	}, nil
 }
 
-func (s *sp) CreateVolume(
+func (s *StoragePlugin) CreateVolume(
 	ctx context.Context,
 	in *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 
@@ -29,7 +29,7 @@ func (s *sp) CreateVolume(
 		"CreateVolume not valid for NFS"), nil
 }
 
-func (s *sp) DeleteVolume(
+func (s *StoragePlugin) DeleteVolume(
 	ctx context.Context,
 	in *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 
@@ -38,7 +38,7 @@ func (s *sp) DeleteVolume(
 		"DeleteVolume not valid for NFS"), nil
 }
 
-func (s *sp) ControllerPublishVolume(
+func (s *StoragePlugin) ControllerPublishVolume(
 	ctx context.Context,
 	in *csi.ControllerPublishVolumeRequest) (*csi.ControllerPublishVolumeResponse, error) {
 
@@ -47,7 +47,7 @@ func (s *sp) ControllerPublishVolume(
 		"ControllerPublishVolume not valid for NFS"), nil
 }
 
-func (s *sp) ControllerUnpublishVolume(
+func (s *StoragePlugin) ControllerUnpublishVolume(
 	ctx context.Context,
 	in *csi.ControllerUnpublishVolumeRequest) (*csi.ControllerUnpublishVolumeResponse, error) {
 
@@ -56,7 +56,7 @@ func (s *sp) ControllerUnpublishVolume(
 		"ControllerUnpublishVolume not valid for NFS"), nil
 }
 
-func (s *sp) ValidateVolumeCapabilities(
+func (s *StoragePlugin) ValidateVolumeCapabilities(
 	ctx context.Context,
 	in *csi.ValidateVolumeCapabilitiesRequest) (*csi.ValidateVolumeCapabilitiesResponse, error) {
 
@@ -89,7 +89,7 @@ func (s *sp) ValidateVolumeCapabilities(
 	return r, nil
 }
 
-func (s *sp) ListVolumes(
+func (s *StoragePlugin) ListVolumes(
 	ctx context.Context,
 	in *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 
@@ -98,7 +98,7 @@ func (s *sp) ListVolumes(
 		"ListVolumes not implemented for NFS"), nil
 }
 
-func (s *sp) GetCapacity(
+func (s *StoragePlugin) GetCapacity(
 	ctx context.Context,
 	in *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 

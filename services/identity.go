@@ -1,4 +1,4 @@
-package main
+package services
 
 import (
 	"golang.org/x/net/context"
@@ -6,7 +6,7 @@ import (
 	"github.com/codedellemc/gocsi/csi"
 )
 
-func (s *sp) GetSupportedVersions(
+func (s *StoragePlugin) GetSupportedVersions(
 	ctx context.Context,
 	req *csi.GetSupportedVersionsRequest) (
 	*csi.GetSupportedVersionsResponse, error) {
@@ -26,7 +26,7 @@ func (s *sp) GetSupportedVersions(
 	}, nil
 }
 
-func (s *sp) GetPluginInfo(
+func (s *StoragePlugin) GetPluginInfo(
 	ctx context.Context,
 	req *csi.GetPluginInfoRequest) (
 	*csi.GetPluginInfoResponse, error) {
@@ -34,8 +34,8 @@ func (s *sp) GetPluginInfo(
 	return &csi.GetPluginInfoResponse{
 		Reply: &csi.GetPluginInfoResponse_Result_{
 			Result: &csi.GetPluginInfoResponse_Result{
-				Name:          s.name,
-				VendorVersion: "0.1.0",
+				Name:          SpName,
+				VendorVersion: spVersion,
 				Manifest:      nil,
 			},
 		},
