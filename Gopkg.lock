@@ -7,6 +7,12 @@
   revision = "996f4bd357b3f628be6cfc8a5ffcf67f9345b0a1"
 
 [[projects]]
+  name = "github.com/codedellemc/goioc"
+  packages = ["."]
+  revision = "900b2641c1787980890665af794d8ff23ffa7afd"
+  version = "v0.1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes/any"]
@@ -51,6 +57,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "aa99f7d8835af5b4bb6ed95a869f200429d40f6f1d3611a03b76edef2005b4b0"
+  inputs-digest = "3a8f333baaa78945e583a94314a35151fe73dbc102df4cc28d7b8f8ffa37f804"
   solver-name = "gps-cdcl"
   solver-version = 1
