@@ -2,6 +2,11 @@
 
 
 [[projects]]
+  name = "github.com/codedellemc/csi-blockdevices"
+  packages = ["block"]
+  revision = "75415a68da56bbf234398937009dedfc45f4334d"
+
+[[projects]]
   name = "github.com/codedellemc/gocsi"
   packages = [".","csi"]
   revision = "996f4bd357b3f628be6cfc8a5ffcf67f9345b0a1"
@@ -21,8 +26,14 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "a3f95b5c423586578a4e099b11a46c2479628cac"
-  version = "1.0.2"
+  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+  version = "v1.0.3"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "81e90905daefcd6fd217b62423c0908922eadb30"
 
 [[projects]]
   branch = "master"
@@ -33,7 +44,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = ["unix","windows"]
   revision = "35ef4487ce0a1ea5d4b616ffe71e34febe723695"
 
 [[projects]]
@@ -57,6 +68,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3a8f333baaa78945e583a94314a35151fe73dbc102df4cc28d7b8f8ffa37f804"
+  inputs-digest = "20f04ae1a42c878f1beaf0ce403d728b994a96008ebc05f8892d7e7a82c2170f"
   solver-name = "gps-cdcl"
   solver-version = 1

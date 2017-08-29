@@ -1,13 +1,22 @@
 package services
 
-import "github.com/codedellemc/gocsi/csi"
+import (
+	"os"
+
+	"github.com/codedellemc/gocsi/csi"
+)
 
 const (
+	// SpName holds the name of the Storage Plugin / driver
 	SpName    = "csi-nfs"
 	spVersion = "0.1.0"
+
+	mountDirEnvVar = "NFSPLUGIN_MOUNTDIR"
+	defaultDir     = "/dev/csi-nfs-mounts"
 )
 
 var (
+	// CSIVersions holds a slice of compatible CSI spec versions
 	CSIVersions = []*csi.Version{
 		&csi.Version{
 			Major: 0,
@@ -17,7 +26,15 @@ var (
 	}
 )
 
+// StoragePlugin contains parameters for the plugin
 type StoragePlugin struct {
+	privDir string
 }
 
-func (sp *StoragePlugin) Init() {}
+// Init initializes the plugin based on environment variables
+func (sp *StoragePlugin) Init() {
+	sp.privDir = defaultDir
+	if md := os.Getenv(mountDirEnvVar); md != "" {
+		sp.privDir = md
+	}
+}
