@@ -3,8 +3,9 @@ package nfs
 import (
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
+
+	"github.com/codedellemc/csi-blockdevices/block"
 )
 
 var (
@@ -24,55 +25,13 @@ func TestMountUnmount(t *testing.T) {
 	}
 	defer os.Remove(mntPath)
 
-	err = Mount(nfsHost+":"+nfsPath, mntPath, []string{})
+	err = block.Mount(nfsHost+":"+nfsPath, mntPath, "nfs", []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = Unmount(mntPath)
+	err = block.Unmount(mntPath)
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestMountArgs(t *testing.T) {
-	tests := []struct {
-		src    string
-		tgt    string
-		fst    string
-		opts   []string
-		result string
-	}{
-		{
-			src:    "localhost:/data",
-			tgt:    "/mnt",
-			fst:    "nfs",
-			result: "-t nfs localhost:/data /mnt",
-		},
-		{
-			src:    "localhost:/data",
-			tgt:    "/mnt",
-			result: "localhost:/data /mnt",
-		},
-		{
-			src:    "localhost:/data",
-			tgt:    "/mnt",
-			fst:    "nfs",
-			opts:   []string{"tcp", "vers=4"},
-			result: "-t nfs -o tcp,vers=4 localhost:/data /mnt",
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run("", func(st *testing.T) {
-			st.Parallel()
-			opts := makeMountArgs(tt.src, tt.tgt, tt.fst, tt.opts)
-			optsStr := strings.Join(opts, " ")
-			if optsStr != tt.result {
-				t.Errorf("Formatting of mount args incorrect, got: %s want: %s",
-					optsStr, tt.result)
-			}
-		})
 	}
 }
