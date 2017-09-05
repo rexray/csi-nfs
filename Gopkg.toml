@@ -15,12 +15,8 @@
 
 [[constraint]]
   name = "github.com/codedellemc/gocsi"
-  revision = "00d5dd1afec2c204bf084a552685888c821ed445"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/codedellemc/goioc"
   version = "0.1.1"
-
-[[constraint]]
-  name = "github.com/codedellemc/csi-blockdevices"
-  revision = "75415a68da56bbf234398937009dedfc45f4334d"
