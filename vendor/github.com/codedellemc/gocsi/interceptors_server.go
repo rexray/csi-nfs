@@ -1,6 +1,7 @@
 package gocsi
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"reflect"
@@ -257,20 +258,26 @@ func (v *serverRepLogger) handle(
 	}
 
 	w := v.stdout
-	fmt.Fprintf(w, "%s: ", info.FullMethod)
+	b := &bytes.Buffer{}
+
+	fmt.Fprintf(b, "%s: ", info.FullMethod)
 	if rid, ok := GetRequestID(ctx); ok {
-		fmt.Fprintf(w, "REP %04d", rid)
+		fmt.Fprintf(b, "REP %04d", rid)
 	}
 
 	rep, err := handler(ctx, req)
 	if err != nil {
-		fmt.Fprintf(w, ": %v", &Error{
+		fmt.Fprintf(b, ": %v", &Error{
 			FullMethod: info.FullMethod,
 			Code:       ErrorNoCode,
 			InnerError: err,
 		})
-		fmt.Fprintln(w)
+		fmt.Fprintln(w, b.String())
 		return rep, err
+	}
+
+	if rep == nil {
+		return nil, nil
 	}
 
 	var gocsiErr error
@@ -331,14 +338,14 @@ func (v *serverRepLogger) handle(
 
 	// Check to see if the reply has an error or is an error itself.
 	if gocsiErr != nil {
-		fmt.Fprintf(w, ": %v", gocsiErr)
-		fmt.Fprintln(w)
+		fmt.Fprintf(b, ": %v", gocsiErr)
+		fmt.Fprintln(w, b.String())
 		return rep, err
 	}
 
 	// At this point the reply must be valid. Format and print it.
-	rprintReqOrRep(w, rep)
-	fmt.Fprintln(w)
+	rprintReqOrRep(b, rep)
+	fmt.Fprintln(w, b.String())
 	return rep, err
 }
 
@@ -553,6 +560,12 @@ func sreqvCreateVolume(
 		}
 	}
 
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrCreateVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
+	}
+
 	return nil, nil
 }
 
@@ -572,6 +585,12 @@ func sreqvDeleteVolume(
 		return ErrDeleteVolume(
 			csi.Error_DeleteVolumeError_INVALID_VOLUME_ID,
 			"missing id map"), nil
+	}
+
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrDeleteVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
 	}
 
 	return nil, nil
@@ -631,6 +650,12 @@ func sreqvControllerPublishVolume(
 			fmt.Sprintf("invalid access type: %T", atype)), nil
 	}
 
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrControllerPublishVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
+	}
+
 	return nil, nil
 }
 
@@ -650,6 +675,12 @@ func sreqvControllerUnpublishVolume(
 		return ErrControllerUnpublishVolume(
 			csi.Error_ControllerUnpublishVolumeError_INVALID_VOLUME_ID,
 			"missing id map"), nil
+	}
+
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrControllerUnpublishVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
 	}
 
 	return nil, nil
@@ -736,6 +767,44 @@ func sreqvGetCapacity(
 	method string,
 	req *csi.GetCapacityRequest) (
 	*csi.GetCapacityResponse, error) {
+
+	if len(req.VolumeCapabilities) == 0 {
+		return nil, nil
+	}
+
+	for i, cap := range req.VolumeCapabilities {
+		if cap.AccessMode == nil {
+			return ErrGetCapacity(
+				csi.Error_GeneralError_UNDEFINED,
+				fmt.Sprintf("missing access mode: index %d", i)), nil
+		}
+		atype := cap.GetAccessType()
+		if atype == nil {
+			return ErrGetCapacity(
+				csi.Error_GeneralError_UNDEFINED,
+				fmt.Sprintf("missing access type: index %d", i)), nil
+		}
+		switch tatype := atype.(type) {
+		case *csi.VolumeCapability_Block:
+			if tatype.Block == nil {
+				return ErrGetCapacity(
+					csi.Error_GeneralError_UNDEFINED,
+					fmt.Sprintf("missing block type: index %d", i)), nil
+			}
+		case *csi.VolumeCapability_Mount:
+			if tatype.Mount == nil {
+				return ErrGetCapacity(
+					csi.Error_GeneralError_UNDEFINED,
+					fmt.Sprintf("missing mount type: index %d", i)), nil
+			}
+		default:
+			return ErrGetCapacity(
+				csi.Error_GeneralError_UNDEFINED,
+				fmt.Sprintf(
+					"invalid access type: index %d, type=%T",
+					i, atype)), nil
+		}
+	}
 
 	return nil, nil
 }
@@ -835,6 +904,12 @@ func sreqvNodePublishVolume(
 			"missing target path"), nil
 	}
 
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrNodePublishVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
+	}
+
 	return nil, nil
 }
 
@@ -860,6 +935,12 @@ func sreqvNodeUnpublishVolume(
 		return ErrNodeUnpublishVolume(
 			csi.Error_NodeUnpublishVolumeError_UNKNOWN,
 			"missing target path"), nil
+	}
+
+	if req.UserCredentials != nil && len(req.UserCredentials.Data) == 0 {
+		return ErrNodeUnpublishVolumeGeneral(
+			csi.Error_GeneralError_MISSING_REQUIRED_FIELD,
+			"empty credentials package specified"), nil
 	}
 
 	return nil, nil
