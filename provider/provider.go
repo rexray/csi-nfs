@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	nodeEnvVar = "NFSPLUGIN_NODEONLY"
-	ctlrEnvVar = "NFSPLUGIN_CONTROLLERONLY"
+	nodeEnvVar = "X_CSI_NFS_NODEONLY"
+	ctlrEnvVar = "X_CSI_NFS_CONTROLLERONLY"
 )
 
 var (
