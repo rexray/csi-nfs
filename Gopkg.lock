@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/codedellemc/gocsi"
   packages = [".","csi","mount"]
-  revision = "39fd0eb9ee5cb7a104b8bc48d9c9afcea6657dd9"
+  revision = "d07507962de8603e31ce24cbd17b0f15aa1c6a3b"
 
 [[projects]]
   name = "github.com/codedellemc/goioc"
