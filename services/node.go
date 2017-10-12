@@ -370,3 +370,8 @@ func getID(host, export string) string {
 	e := strings.Replace(export, "/", "#", -1)
 	return getUri(host, e)
 }
+
+func getName(host, export string) string {
+	e := strings.Replace(export, "/", "-", -1)
+	return fmt.Sprintf("%s%s", host, e)
+}
