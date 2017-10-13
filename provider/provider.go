@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/codedellemc/gocsi"
 	"github.com/codedellemc/gocsi/csi"
 	"github.com/codedellemc/goioc"
 	log "github.com/sirupsen/logrus"
@@ -60,7 +61,13 @@ func (p *provider) Serve(ctx context.Context, li net.Listener) error {
 		if p.server != nil {
 			return errServerStarted
 		}
-		p.server = grpc.NewServer()
+		p.server = grpc.NewServer(
+			grpc.UnaryInterceptor(gocsi.ChainUnaryServer(
+				gocsi.ServerRequestIDInjector,
+				gocsi.NewServerRequestLogger(os.Stdout, os.Stderr),
+				gocsi.NewServerResponseLogger(os.Stdout, os.Stderr),
+				gocsi.NewServerRequestVersionValidator(services.CSIVersions),
+				gocsi.ServerRequestValidator)))
 		return nil
 	}(); err != nil {
 		return errServerStarted
