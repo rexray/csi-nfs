@@ -120,7 +120,7 @@ func (p *provider) Stop(ctx context.Context) {
 	p.Lock()
 	defer p.Unlock()
 	log.WithField("name", services.SpName).Info(".Stop")
-	p.Stop(ctx)
+	p.server.Stop()
 	p.closed = true
 }
 
@@ -135,6 +135,6 @@ func (p *provider) GracefulStop(ctx context.Context) {
 	p.Lock()
 	defer p.Unlock()
 	log.WithField("name", services.SpName).Info(".GracefulStop")
-	p.GracefulStop(ctx)
+	p.server.GracefulStop()
 	p.closed = true
 }
