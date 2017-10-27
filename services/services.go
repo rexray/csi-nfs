@@ -13,7 +13,6 @@ const (
 	Name    = "csi-nfs"
 	Version = "0.1.0"
 
-	debugEnvVar    = "X_CSI_NFS_DEBUG"
 	mountDirEnvVar = "X_CSI_NFS_MOUNTDIR"
 	defaultDir     = "/dev/csi-nfs-mounts"
 )

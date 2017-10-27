@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 
 	"github.com/thecodeteam/gocsi"
 	"github.com/thecodeteam/gocsi/csi"
 	"github.com/thecodeteam/gocsi/mount"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/thecodeteam/csi-nfs/nfs"
 )

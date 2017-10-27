@@ -9,17 +9,19 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	"github.com/thecodeteam/gocsi"
 	"github.com/thecodeteam/gocsi/csi"
 	"github.com/thecodeteam/goioc"
-	"google.golang.org/grpc"
 
 	"github.com/thecodeteam/csi-nfs/services"
 )
 
 const (
-	nodeEnvVar = "X_CSI_NFS_NODEONLY"
-	ctlrEnvVar = "X_CSI_NFS_CONTROLLERONLY"
+	debugEnvVar = "X_CSI_NFS_DEBUG"
+	nodeEnvVar  = "X_CSI_NFS_NODEONLY"
+	ctlrEnvVar  = "X_CSI_NFS_CONTROLLERONLY"
 )
 
 var (
@@ -119,6 +121,10 @@ func (p *provider) Serve(ctx context.Context, li net.Listener) error {
 		return nil
 	}(); err != nil {
 		return errServerStarted
+	}
+
+	if _, d := os.LookupEnv(debugEnvVar); d {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	p.service = services.New()
