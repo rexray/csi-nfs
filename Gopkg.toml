@@ -3,7 +3,7 @@
 
 [[override]]
   name = "github.com/sirupsen/logrus"
-  version = "1.0.2"
+  branch = "master"
 
 [[constraint]]
   name = "golang.org/x/net"
@@ -14,9 +14,9 @@
   version = "1.5.2"
 
 [[constraint]]
-  name = "github.com/codedellemc/gocsi"
+  name = "github.com/thecodeteam/gocsi"
   branch = "master"
 
 [[constraint]]
-  name = "github.com/codedellemc/goioc"
-  version = "0.1.1"
+  name = "github.com/thecodeteam/goioc"
+  branch = "master"

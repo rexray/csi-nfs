@@ -3,7 +3,7 @@ package services
 import (
 	"golang.org/x/net/context"
 
-	"github.com/codedellemc/gocsi/csi"
+	"github.com/thecodeteam/gocsi/csi"
 )
 
 func (s *StoragePlugin) GetSupportedVersions(

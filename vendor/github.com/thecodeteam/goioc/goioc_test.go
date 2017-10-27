@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/codedellemc/goioc"
+	"github.com/thecodeteam/goioc"
 )
 
 func TestNew(t *testing.T) {

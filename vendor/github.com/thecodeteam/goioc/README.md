@@ -1,4 +1,4 @@
-# GoIoC [![Build Status](http://travis-ci.org/codedellemc/goioc.svg?branch=master)](https://travis-ci.org/codedellemc/goioc)
+# GoIoC [![Build Status](http://travis-ci.org/thecodeteam/goioc.svg?branch=master)](https://travis-ci.org/thecodeteam/goioc)
 GoIoC introduces inversion of control (IoC) to Go by providing a basic
 type registry.
 

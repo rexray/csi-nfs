@@ -8,12 +8,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/codedellemc/gocsi"
-	"github.com/codedellemc/gocsi/csi"
-	"github.com/codedellemc/gocsi/mount"
+	"github.com/thecodeteam/gocsi"
+	"github.com/thecodeteam/gocsi/csi"
+	"github.com/thecodeteam/gocsi/mount"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/codedellemc/csi-nfs/nfs"
+	"github.com/thecodeteam/csi-nfs/nfs"
 )
 
 func (s *StoragePlugin) NodePublishVolume(

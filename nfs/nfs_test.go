@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/codedellemc/gocsi/mount"
+	"github.com/thecodeteam/gocsi/mount"
 )
 
 var (

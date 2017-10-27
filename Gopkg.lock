@@ -3,27 +3,27 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/codedellemc/gocsi"
-  packages = [".","csi","mount"]
-  revision = "d07507962de8603e31ce24cbd17b0f15aa1c6a3b"
-
-[[projects]]
-  name = "github.com/codedellemc/goioc"
-  packages = ["."]
-  revision = "900b2641c1787980890665af794d8ff23ffa7afd"
-  version = "v0.1.1"
-
-[[projects]]
-  branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes/any"]
   revision = "748d386b5c1ea99658fd69fe9f03991ce86a90c1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
-  version = "v1.0.3"
+  revision = "89742aefa4b206dcf400792f3bd35b542998eb3b"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/thecodeteam/gocsi"
+  packages = [".","csi","mount"]
+  revision = "83f15105815b4bdc0d4f52796a458d2ce9e588fe"
+
+[[projects]]
+  name = "github.com/thecodeteam/goioc"
+  packages = ["."]
+  revision = "bcc5c533363c5bb3eb0651a1413889ec71822200"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -64,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "52abf79cfb245b92f10005790df28ae1de1f4a0418e9f31840140228c8d32fe5"
+  inputs-digest = "c69d08375e3001853766cf5bdf85a77b36447740f1ef2b3f60e7f36f3cc7dee8"
   solver-name = "gps-cdcl"
   solver-version = 1

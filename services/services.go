@@ -3,7 +3,7 @@ package services
 import (
 	"os"
 
-	"github.com/codedellemc/gocsi/csi"
+	"github.com/thecodeteam/gocsi/csi"
 )
 
 const (
