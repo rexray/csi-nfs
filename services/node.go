@@ -16,7 +16,7 @@ import (
 	"github.com/thecodeteam/csi-nfs/nfs"
 )
 
-func (s *StoragePlugin) NodePublishVolume(
+func (s *storagePlugin) NodePublishVolume(
 	ctx context.Context,
 	in *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
 
@@ -58,7 +58,7 @@ func (s *StoragePlugin) NodePublishVolume(
 	return s.handleMount(host, export, target, mf, ro, am)
 }
 
-func (s *StoragePlugin) NodeUnpublishVolume(
+func (s *storagePlugin) NodeUnpublishVolume(
 	ctx context.Context,
 	in *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
 
@@ -132,7 +132,7 @@ func (s *StoragePlugin) NodeUnpublishVolume(
 	}, nil
 }
 
-func (s *StoragePlugin) GetNodeID(
+func (s *storagePlugin) GetNodeID(
 	ctx context.Context,
 	in *csi.GetNodeIDRequest) (*csi.GetNodeIDResponse, error) {
 
@@ -145,7 +145,7 @@ func (s *StoragePlugin) GetNodeID(
 	}, nil
 }
 
-func (s *StoragePlugin) ProbeNode(
+func (s *storagePlugin) ProbeNode(
 	ctx context.Context,
 	in *csi.ProbeNodeRequest) (*csi.ProbeNodeResponse, error) {
 
@@ -162,7 +162,7 @@ func (s *StoragePlugin) ProbeNode(
 	}, nil
 }
 
-func (s *StoragePlugin) NodeGetCapabilities(
+func (s *storagePlugin) NodeGetCapabilities(
 	ctx context.Context,
 	in *csi.NodeGetCapabilitiesRequest) (*csi.NodeGetCapabilitiesResponse, error) {
 
@@ -190,7 +190,7 @@ func mkdir(path string) (bool, error) {
 	return false, nil
 }
 
-func (s *StoragePlugin) handleMount(
+func (s *storagePlugin) handleMount(
 	host string,
 	export string,
 	target string,
@@ -349,7 +349,7 @@ func (s *StoragePlugin) handleMount(
 	}, nil
 }
 
-func (s *StoragePlugin) getPrivateMountPoint(src string) string {
+func (s *storagePlugin) getPrivateMountPoint(src string) string {
 	return filepath.Join(s.privDir, src)
 }
 

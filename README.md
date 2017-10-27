@@ -1,13 +1,14 @@
-CSI-NFS
+CSI-NFS [![Build Status](http://travis-ci.org/thecodeteam/csi-nfs.svg?branch=master)](https://travis-ci.org/thecodeteam/csi-nfs)
 -------
 
-CSI-NFS is an implementation of a
-[CSI](https://github.com/container-storage-interface) plugin for NFS volumes.
+CSI-NFS is a Container Storage Interface
+([CSI](https://github.com/container-storage-interface/spec)) plug-in
+that provides network filesystem (NFS) support.
 
-It is structured such that it can be compiled into a standalone golang binary
-that can be executed to meet the requirements of a CSI plugin. Furthermore, the
-core NFS logic is separated into a `nfs` go package that can be imported for use
-by other programs.
+This project may be compiled as a stand-alone binary using Golang that,
+when run, provides a valid CSI endpoint. This project can also be
+vendored or built as a Golang plug-in in order to extend the functionality
+of other programs.
 
 Installation
 -------------
@@ -90,21 +91,22 @@ Here are some sample commands:
 
 ```sh
 $ csc gets
-0.1.0
-$ csc getp
+0.0.0
+$ csc getp -version 0.0.0
 csi-nfs	0.1.0
-$ csc cget
+$ csc cget -version 0.0.0
 LIST_VOLUMES
 $ showmount -e 192.168.75.2
 Exports list on 192.168.75.2:
 	/data                             192.168.75.1
-$ csc mnt -targetPath /tmp/mnt -mode 1 host=192.168.75.2 export=/data
-$ ls -al /tmp/mnt
+$ mkdir /mnt/test
+$ csc mnt -version 0.0.0 -targetPath /mnt/test -mode 1 host=192.168.75.2 export=/data
+$ ls -al /mnt/test
 total 1
 drwxr-xr-x   2 root  wheel    18 Jul 22 20:25 .
 drwxrwxrwt  85 root  wheel  2890 Aug 17 15:32 ..
 -rw-r--r--   1 root  wheel     0 Jul 22 20:25 test
-$ csc umount -targetPath /tmp/mnt host=192.168.75.2 export=/data
+$ csc umount -version 0.0.0 -targetPath /mnt/test host=192.168.75.2 export=/data
 $ ls -al /tmp/mnt
 total 0
 drwxr-xr-x   2 travis  wheel    68 Aug 16 15:01 .

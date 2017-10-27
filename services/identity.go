@@ -6,7 +6,7 @@ import (
 	"github.com/thecodeteam/gocsi/csi"
 )
 
-func (s *StoragePlugin) GetSupportedVersions(
+func (s *storagePlugin) GetSupportedVersions(
 	ctx context.Context,
 	req *csi.GetSupportedVersionsRequest) (
 	*csi.GetSupportedVersionsResponse, error) {
@@ -20,7 +20,7 @@ func (s *StoragePlugin) GetSupportedVersions(
 	}, nil
 }
 
-func (s *StoragePlugin) GetPluginInfo(
+func (s *storagePlugin) GetPluginInfo(
 	ctx context.Context,
 	req *csi.GetPluginInfoRequest) (
 	*csi.GetPluginInfoResponse, error) {
@@ -28,8 +28,8 @@ func (s *StoragePlugin) GetPluginInfo(
 	return &csi.GetPluginInfoResponse{
 		Reply: &csi.GetPluginInfoResponse_Result_{
 			Result: &csi.GetPluginInfoResponse_Result{
-				Name:          SpName,
-				VendorVersion: spVersion,
+				Name:          Name,
+				VendorVersion: Version,
 				Manifest:      nil,
 			},
 		},

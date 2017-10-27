@@ -3,14 +3,17 @@ package services
 import (
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/thecodeteam/gocsi/csi"
 )
 
 const (
 	// SpName holds the name of the Storage Plugin / driver
-	SpName    = "csi-nfs"
-	spVersion = "0.1.0"
+	Name    = "csi-nfs"
+	Version = "0.1.0"
 
+	debugEnvVar    = "X_CSI_NFS_DEBUG"
 	mountDirEnvVar = "X_CSI_NFS_MOUNTDIR"
 	defaultDir     = "/dev/csi-nfs-mounts"
 )
@@ -26,15 +29,30 @@ var (
 	}
 )
 
-// StoragePlugin contains parameters for the plugin
-type StoragePlugin struct {
+// Service is the CSI Network File System (NFS) service provider.
+type Service interface {
+	csi.ControllerServer
+	csi.IdentityServer
+	csi.NodeServer
+}
+
+// storagePlugin contains parameters for the plugin
+type storagePlugin struct {
 	privDir string
 }
 
-// Init initializes the plugin based on environment variables
-func (sp *StoragePlugin) Init() {
-	sp.privDir = defaultDir
+// New returns a new Service
+func New() Service {
+
+	sp := &storagePlugin{
+		privDir: defaultDir,
+	}
 	if md := os.Getenv(mountDirEnvVar); md != "" {
 		sp.privDir = md
 	}
+	log.WithFields(map[string]interface{}{
+		"privDir": sp.privDir,
+	}).Info("created new " + Name + " service")
+
+	return sp
 }
