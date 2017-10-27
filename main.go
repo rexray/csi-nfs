@@ -4,110 +4,111 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"syscall"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	"github.com/thecodeteam/gocsi"
-	"github.com/thecodeteam/gocsi/csi"
 
+	"github.com/thecodeteam/csi-nfs/provider"
 	"github.com/thecodeteam/csi-nfs/services"
 )
 
-const (
-	debugEnvVar = "X_CSI_NFS_DEBUG"
-	nodeEnvVar  = "X_CSI_NFS_NODEONLY"
-	ctlrEnvVar  = "X_CSI_NFS_CONTROLLERONLY"
-)
-
+// main is ignored when this package is built as a go plug-in
 func main() {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill)
-
-	if _, d := os.LookupEnv(debugEnvVar); d {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	s := &sp{}
-
-	go func() {
-		_ = <-c
-		if s.server != nil {
-			log.WithField("name", services.SpName).Info(".GracefulStop")
-			s.server.GracefulStop()
-
-			// make sure sock file got cleaned up
-			proto, addr, _ := gocsi.GetCSIEndpoint()
-			if proto == "unix" && addr != "" {
-				if _, err := os.Stat(addr); !os.IsNotExist(err) {
-					s.server.Stop()
-					if err := os.Remove(addr); err != nil {
-						log.WithError(err).Warn(
-							"Unable to remove sock file")
-					}
-				}
-			}
-		}
-	}()
-
 	l, err := gocsi.GetCSIEndpointListener()
 	if err != nil {
-		log.WithError(err).Fatal("failed to listen")
+		log.WithError(err).Fatalln("failed to listen")
 	}
 
-	ctx := context.Background()
-
-	if err := s.Serve(ctx, l); err != nil {
-		if err != grpc.ErrServerStopped {
-			log.WithError(err).Fatal("grpc failed")
+	// Define a lambda that can be used in the exit handler
+	// to remove a potential UNIX sock file.
+	rmSockFile := func() {
+		if l == nil || l.Addr() == nil {
+			return
+		}
+		if l.Addr().Network() == "unix" {
+			sockFile := l.Addr().String()
+			os.RemoveAll(sockFile)
+			log.WithField("path", sockFile).Info("removed sock file")
 		}
 	}
+
+	sp := provider.New(nil, newGrpcInterceptors())
+	ctx := context.Background()
+
+	trapSignals(func() {
+		sp.GracefulStop(ctx)
+		rmSockFile()
+		log.Info("server stopped gracefully")
+	}, func() {
+		sp.Stop(ctx)
+		rmSockFile()
+		log.Info("server aborted")
+	})
+
+	if err := sp.Serve(ctx, l); err != nil {
+		log.WithError(err).Fatal("grpc failed")
+		os.Exit(1)
+	}
 }
 
-type sp struct {
-	server *grpc.Server
-	plugin *services.StoragePlugin
-}
-
-// ServiceProvider.Serve
-func (s *sp) Serve(ctx context.Context, li net.Listener) error {
-	log.WithField("name", services.SpName).Info(".Serve")
-	s.server = grpc.NewServer(grpc.UnaryInterceptor(gocsi.ChainUnaryServer(
+func newGrpcInterceptors() []grpc.UnaryServerInterceptor {
+	return []grpc.UnaryServerInterceptor{
 		gocsi.ServerRequestIDInjector,
 		gocsi.NewServerRequestLogger(os.Stdout, os.Stderr),
 		gocsi.NewServerResponseLogger(os.Stdout, os.Stderr),
 		gocsi.NewServerRequestVersionValidator(services.CSIVersions),
-		gocsi.ServerRequestValidator)))
-
-	s.plugin = &services.StoragePlugin{}
-	s.plugin.Init()
-
-	// Always host the Identity Service
-	csi.RegisterIdentityServer(s.server, s.plugin)
-
-	_, nodeSvc := os.LookupEnv(nodeEnvVar)
-	_, ctrlSvc := os.LookupEnv(ctlrEnvVar)
-
-	if nodeSvc && ctrlSvc {
-		log.Fatalf("Cannot specify both %s and %s",
-			nodeEnvVar, ctlrEnvVar)
+		gocsi.ServerRequestValidator,
 	}
+}
 
-	switch {
-	case nodeSvc:
-		csi.RegisterNodeServer(s.server, s.plugin)
-		log.Debug("Added Node Service")
-	case ctrlSvc:
-		csi.RegisterControllerServer(s.server, s.plugin)
-		log.Debug("Added Controller Service")
+type serviceProvider interface {
+	Serve(ctx context.Context, lis net.Listener) error
+	Stop(ctx context.Context)
+	GracefulStop(ctx context.Context)
+}
+
+func trapSignals(onExit, onAbort func()) {
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc)
+	go func() {
+		for s := range sigc {
+			ok, graceful := isExitSignal(s)
+			if !ok {
+				continue
+			}
+			if !graceful {
+				log.WithField("signal", s).Error("received signal; aborting")
+				if onAbort != nil {
+					onAbort()
+				}
+				os.Exit(1)
+			}
+			log.WithField("signal", s).Info("received signal; shutting down")
+			if onExit != nil {
+				onExit()
+			}
+			os.Exit(0)
+		}
+	}()
+}
+
+// isExitSignal returns a flag indicating whether a signal is SIGKILL, SIGHUP,
+// SIGINT, SIGTERM, or SIGQUIT. The second return value is whether it is a
+// graceful exit. This flag is true for SIGTERM, SIGHUP, SIGINT, and SIGQUIT.
+func isExitSignal(s os.Signal) (bool, bool) {
+	switch s {
+	case syscall.SIGKILL:
+		return true, false
+	case syscall.SIGTERM,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGQUIT:
+		return true, true
 	default:
-		csi.RegisterControllerServer(s.server, s.plugin)
-		log.Debug("Added Controller Service")
-		csi.RegisterNodeServer(s.server, s.plugin)
-		log.Debug("Added Node Service")
+		return false, false
 	}
-
-	// start the grpc server
-	return s.server.Serve(li)
 }
