@@ -4,28 +4,16 @@ that provides analogues for all of the CSI RPCs.
 
 ```bash
 $ csc
-usage: csc RPC [ARGS...]
+NAME
+    csc -- a command line container storage interface (CSI) client
 
-       CONTROLLER RPCs
-         createvolume (new, create)
-         deletevolume (d, rm, del)
-         controllerpublishvolume (att, attach)
-         controllerunpublishvolume (det, detach)
-         validatevolumecapabilities (v, validate)
-         listvolumes (l, ls, list)
-         getcapacity (getc, capacity)
-         controllergetcapabilities (cget)
+SYNOPSIS
+    csc [flags] CMD
 
-       IDENTITY RPCs
-         getsupportedversions (gets)
-         getplugininfo (getp)
+AVAILABLE COMMANDS
+    controller
+    identity
+    node
 
-       NODE RPCs
-         nodepublishvolume (mnt, mount)
-         nodeunpublishvolume (umount, unmount)
-         getnodeid (id, getn, nodeid)
-         probenode (p, probe)
-         nodegetcapabilities (n, node)
-
-Use the -? flag with an RPC for additional help.
+Use "csc -h,--help" for more information
 ```

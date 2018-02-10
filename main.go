@@ -13,7 +13,7 @@ import (
 	"github.com/thecodeteam/gocsi"
 
 	"github.com/thecodeteam/csi-nfs/provider"
-	"github.com/thecodeteam/csi-nfs/services"
+	"github.com/thecodeteam/csi-nfs/service"
 )
 
 // main is ignored when this package is built as a go plug-in
@@ -60,7 +60,7 @@ func newGrpcInterceptors() []grpc.UnaryServerInterceptor {
 		gocsi.ServerRequestIDInjector,
 		gocsi.NewServerRequestLogger(os.Stdout, os.Stderr),
 		gocsi.NewServerResponseLogger(os.Stdout, os.Stderr),
-		gocsi.NewServerRequestVersionValidator(services.CSIVersions),
+		gocsi.NewServerRequestVersionValidator(service.CSIVersions),
 		gocsi.ServerRequestValidator,
 	}
 }

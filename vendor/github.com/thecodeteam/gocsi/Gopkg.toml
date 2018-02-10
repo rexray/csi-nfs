@@ -3,14 +3,9 @@
 #
 # Refer to https://github.com/toml-lang/toml for detailed TOML docs.
 
-required = [
-  "github.com/golang/protobuf/protoc-gen-go",
-  "github.com/container-storage-interface/spec/lib/go",
-]
-
 [[constraint]]
   name = "github.com/container-storage-interface/spec"
-  branch = "master"
+  version = "0.1.0"
 
 [[constraint]]
   name = "github.com/golang/protobuf"
@@ -28,6 +23,10 @@ required = [
   name = "github.com/sirupsen/logrus"
   branch = "master"
 
+[[constraint]]
+  name = "github.com/coreos/etcd"
+  version = "v3.2.15"
+
 
 ################################################################################
 ##                                 Testing                                    ##
@@ -40,3 +39,7 @@ required = [
 [[constraint]]
   name = "github.com/onsi/gomega"
   version = "1.2.0"
+
+[[constraint]]
+  name = "github.com/akutz/memconn"
+  branch = "master"

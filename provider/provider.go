@@ -11,11 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/thecodeteam/csi-nfs/service"
 	"github.com/thecodeteam/gocsi"
-	"github.com/thecodeteam/gocsi/csi"
 	"github.com/thecodeteam/goioc"
-
-	"github.com/thecodeteam/csi-nfs/services"
 )
 
 const (
@@ -70,7 +69,7 @@ type provider struct {
 	sync.Mutex
 	server       *grpc.Server
 	closed       bool
-	service      services.Service
+	service      service.Service
 	interceptors []grpc.UnaryServerInterceptor
 	serverOpts   []grpc.ServerOption
 }

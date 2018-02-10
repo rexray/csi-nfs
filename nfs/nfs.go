@@ -3,8 +3,10 @@
 package nfs
 
 import (
+	"encoding/base32"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 // Supported queries the underlying system to check if the required system
@@ -18,4 +20,28 @@ func Supported() error {
 		return fmt.Errorf("Required binary /sbin/mount.nfs4 is missing")
 	}
 	return nil
+}
+
+func GetName(volID string) string {
+	volIDb := []byte(volID)
+
+	name := base32.StdEncoding.EncodeToString(volIDb)
+
+	return name
+}
+
+func DecodeName(name string) (string, string, error) {
+
+	rawIDb, err := base32.StdEncoding.DecodeString(name)
+	if err != nil {
+		return "", "", err
+	}
+
+	fields := strings.Split(string(rawIDb), ":")
+	if len(fields) != 2 {
+		return "", "", fmt.Errorf("Unable to decode volume ID")
+	}
+
+	return fields[0], fields[1], nil
+
 }
