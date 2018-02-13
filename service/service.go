@@ -3,26 +3,34 @@ package service
 import (
 	"context"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/thecodeteam/gocsi"
 	csictx "github.com/thecodeteam/gocsi/context"
+
+	"github.com/thecodeteam/csi-nfs/core"
 )
 
 const (
 	// Name is the name of this CSI SP.
 	Name = "com.thecodeteam.csi-nfs"
 
-	// VendorVersion is the version of this CSP SP.
-	VendorVersion = "0.1.0"
-
 	// SupportedVersions is a list of the CSI versions this SP supports.
 	SupportedVersions = "0.1.0"
 
 	defaultPrivDir = "/dev/disk/csi-nfs-private"
 )
+
+// Manifest is the SP's manifest.
+var Manifest = map[string]string{
+	"url":    "https://github.com/thecodeteam/csi-nfs",
+	"semver": core.SemVer,
+	"commit": core.CommitSha32,
+	"formed": core.CommitTime.Format(time.RFC1123),
+}
 
 // Service is a CSI SP
 type Service interface {

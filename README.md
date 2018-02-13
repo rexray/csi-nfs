@@ -13,13 +13,22 @@ of other programs.
 Installation
 -------------
 
-You'll need a working [Go](https://golang.org) installation. From there,
-download and installation is as simple as:
+CSI-NFS can be installed with Go and the following command:
 
-`go get github.com/thecodeteam/csi-nfs`
+`$ go get github.com/thecodeteam/csi-nfs`
 
-This will download the source to `$GOPATH/src/github.com/thecodeteam/csi-nfs`,
-and will build install the binary `csi-nfs` to `$GOPATH/bin/csi-nfs`.
+The resulting binary will be installed to `$GOPATH/bin/csi-nfs`.
+
+If you want to build `csi-nfs` with accurate version information, you'll
+need to run the `go generate` command and build again:
+
+```bash
+$ go get github.com/thecodeteam/csi-nfs
+$ cd $GOPATH/src/github.com/thecodeteam/csi-nfs
+$ go generate && go install
+```
+
+The binary will once again be installed to `$GOPATH/bin/csi-nfs`.
 
 Starting the plugin
 -------------------

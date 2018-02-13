@@ -1,3 +1,5 @@
+//go:generate go generate ./core
+
 package main
 
 import (

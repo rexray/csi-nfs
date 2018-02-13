@@ -1,4 +1,5 @@
 // +build linux,plugin
+//go:generate go generate ./core
 
 package main
 
