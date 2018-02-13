@@ -20,19 +20,13 @@ export GOPATH
 ##                                   DEP                                      ##
 ################################################################################
 DEP ?= ./dep
-DEP_VER ?= 0.3.2
-DEP_BIN := dep-$$GOHOSTOS-$$GOHOSTARCH
-DEP_URL := https://github.com/golang/dep/releases/download/v$(DEP_VER)/$$DEP_BIN
+DEP_DIR := ./vendor/github.com/golang/dep
 
 $(DEP):
-	GOVERSION=$$(go version | awk '{print $$4}') && \
-	GOHOSTOS=$$(echo $$GOVERSION | awk -F/ '{print $$1}') && \
-	GOHOSTARCH=$$(echo $$GOVERSION | awk -F/ '{print $$2}') && \
-	DEP_BIN="$(DEP_BIN)" && \
-	DEP_URL="$(DEP_URL)" && \
-	curl -sSLO $$DEP_URL && \
-	chmod 0755 "$$DEP_BIN" && \
-	mv -f "$$DEP_BIN" "$@"
+	@rm -fr $(DEP_DIR)
+	git clone https://github.com/akutz/dep $(DEP_DIR)
+	git -C $(DEP_DIR) checkout feature/fetch-gh-pulls
+	go build -o $@ $(DEP_DIR)/cmd/dep
 
 ifneq (./dep,$(DEP))
 dep: $(DEP)
@@ -85,8 +79,14 @@ CSI_SP_DIR := $(GOPATH)/src/$(CSI_SP_IMPORT)
 CSI_SP := $(CSI_SP_DIR)/csi-sp
 CSI_SP_SOCK := $(notdir $(CSI_SP)).sock
 CSI_SP_LOG := $(notdir $(CSI_SP)).log
-$(CSI_SP):
-	USE_DEP=true ./gocsi.sh $(CSI_SP_IMPORT)
+GOCSI_SH_ENV := USE_DEP=true
+GOCSI_SH_ENV += DEP_GIT_REFSPECS=+refs/pull/*:refs/pull/origin/*
+ifeq (true,$(TRAVIS))
+GOCSI_SH_ENV += GOCSI_DEP_SOURCE=https://github.com/$(TRAVIS_REPO_SLUG)
+GOCSI_SH_ENV += GOCSI_DEP_REVISION=$(TRAVIS_COMMIT)
+endif
+$(CSI_SP): | $(DEP)
+	DEP=$(abspath $(DEP)) $(GOCSI_SH_ENV) ./gocsi.sh $(CSI_SP_IMPORT)
 
 csi-sp: $(CSI_SP_LOG)
 $(CSI_SP_LOG): $(CSI_SP)

@@ -9,7 +9,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
 
-func (s *storagePlugin) ControllerGetCapabilities(
+func (s *service) ControllerGetCapabilities(
 	ctx context.Context,
 	req *csi.ControllerGetCapabilitiesRequest) (
 	*csi.ControllerGetCapabilitiesResponse, error) {
@@ -17,21 +17,21 @@ func (s *storagePlugin) ControllerGetCapabilities(
 	return &csi.ControllerGetCapabilitiesResponse{}, nil
 }
 
-func (s *storagePlugin) CreateVolume(
+func (s *service) CreateVolume(
 	ctx context.Context,
 	req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
 
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) DeleteVolume(
+func (s *service) DeleteVolume(
 	ctx context.Context,
 	req *csi.DeleteVolumeRequest) (*csi.DeleteVolumeResponse, error) {
 
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) ControllerPublishVolume(
+func (s *service) ControllerPublishVolume(
 	ctx context.Context,
 	req *csi.ControllerPublishVolumeRequest) (
 	*csi.ControllerPublishVolumeResponse, error) {
@@ -39,7 +39,7 @@ func (s *storagePlugin) ControllerPublishVolume(
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) ControllerUnpublishVolume(
+func (s *service) ControllerUnpublishVolume(
 	ctx context.Context,
 	req *csi.ControllerUnpublishVolumeRequest) (
 	*csi.ControllerUnpublishVolumeResponse, error) {
@@ -47,7 +47,7 @@ func (s *storagePlugin) ControllerUnpublishVolume(
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) ValidateVolumeCapabilities(
+func (s *service) ValidateVolumeCapabilities(
 	ctx context.Context,
 	req *csi.ValidateVolumeCapabilitiesRequest) (
 	*csi.ValidateVolumeCapabilitiesResponse, error) {
@@ -77,21 +77,21 @@ func (s *storagePlugin) ValidateVolumeCapabilities(
 	return r, nil
 }
 
-func (s *storagePlugin) ListVolumes(
+func (s *service) ListVolumes(
 	ctx context.Context,
 	req *csi.ListVolumesRequest) (*csi.ListVolumesResponse, error) {
 
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) GetCapacity(
+func (s *service) GetCapacity(
 	ctx context.Context,
 	req *csi.GetCapacityRequest) (*csi.GetCapacityResponse, error) {
 
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) ControllerProbe(
+func (s *service) ControllerProbe(
 	ctx context.Context,
 	req *csi.ControllerProbeRequest) (*csi.ControllerProbeResponse, error) {
 

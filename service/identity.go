@@ -6,24 +6,23 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 )
 
-func (s *storagePlugin) GetSupportedVersions(
+func (s *service) GetSupportedVersions(
 	ctx context.Context,
 	req *csi.GetSupportedVersionsRequest) (
 	*csi.GetSupportedVersionsResponse, error) {
 
-	return &csi.GetSupportedVersionsResponse{
-		SupportedVersions: CSIVersions,
-	}, nil
+	// Defer to GoCSI interceptor
+	return nil, nil
 }
 
-func (s *storagePlugin) GetPluginInfo(
+func (s *service) GetPluginInfo(
 	ctx context.Context,
 	req *csi.GetPluginInfoRequest) (
 	*csi.GetPluginInfoResponse, error) {
 
 	return &csi.GetPluginInfoResponse{
 		Name:          Name,
-		VendorVersion: Version,
+		VendorVersion: VendorVersion,
 		Manifest:      nil,
 	}, nil
 }

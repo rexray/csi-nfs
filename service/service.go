@@ -1,57 +1,63 @@
 package service
 
 import (
-	"os"
+	"context"
+	"net"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"github.com/thecodeteam/gocsi"
+	csictx "github.com/thecodeteam/gocsi/context"
 )
 
 const (
-	// SpName holds the name of the Storage Plugin / driver
-	Name    = "csi-nfs"
-	Version = "0.1.0"
+	// Name is the name of this CSI SP.
+	Name = "com.thecodeteam.csi-nfs"
 
-	mountDirEnvVar = "X_CSI_NFS_MOUNTDIR"
-	defaultDir     = "/dev/csi-nfs-mounts"
+	// VendorVersion is the version of this CSP SP.
+	VendorVersion = "0.1.0"
+
+	// SupportedVersions is a list of the CSI versions this SP supports.
+	SupportedVersions = "0.1.0"
+
+	defaultPrivDir = "/dev/disk/csi-nfs-private"
 )
 
-var (
-	// CSIVersions holds a slice of compatible CSI spec versions
-	CSIVersions = []*csi.Version{
-		&csi.Version{
-			Major: 0,
-			Minor: 0,
-			Patch: 0,
-		},
-	}
-)
-
-// Service is the CSI Network File System (NFS) service provider.
+// Service is a CSI SP
 type Service interface {
 	csi.ControllerServer
 	csi.IdentityServer
 	csi.NodeServer
+	BeforeServe(context.Context, *gocsi.StoragePlugin, net.Listener) error
 }
 
-// storagePlugin contains parameters for the plugin
-type storagePlugin struct {
+type service struct {
 	privDir string
 }
 
-// New returns a new Service
+// New returns a new Service.
 func New() Service {
+	return &service{}
+}
 
-	sp := &storagePlugin{
-		privDir: defaultDir,
-	}
-	if md := os.Getenv(mountDirEnvVar); md != "" {
-		sp.privDir = md
-	}
-	log.WithFields(map[string]interface{}{
-		"privDir": sp.privDir,
-	}).Info("created new " + Name + " service")
+func (s *service) BeforeServe(
+	ctx context.Context, sp *gocsi.StoragePlugin, lis net.Listener) error {
 
-	return sp
+	defer func() {
+		fields := map[string]interface{}{
+			"privatedir": s.privDir,
+		}
+
+		log.WithFields(fields).Infof("configured %s", Name)
+	}()
+
+	if pd, ok := csictx.LookupEnv(ctx, gocsi.EnvVarPrivateMountDir); ok {
+		s.privDir = pd
+	}
+	if s.privDir == "" {
+		s.privDir = defaultPrivDir
+	}
+
+	return nil
 }

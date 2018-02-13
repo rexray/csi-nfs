@@ -16,7 +16,7 @@ import (
 	"github.com/thecodeteam/csi-nfs/nfs"
 )
 
-func (s *storagePlugin) NodePublishVolume(
+func (s *service) NodePublishVolume(
 	ctx context.Context,
 	req *csi.NodePublishVolumeRequest) (
 	*csi.NodePublishVolumeResponse, error) {
@@ -42,7 +42,7 @@ func (s *storagePlugin) NodePublishVolume(
 	return s.handleMount(req.VolumeId, target, mf, ro, am)
 }
 
-func (s *storagePlugin) NodeUnpublishVolume(
+func (s *service) NodeUnpublishVolume(
 	ctx context.Context,
 	req *csi.NodeUnpublishVolumeRequest) (
 	*csi.NodeUnpublishVolumeResponse, error) {
@@ -90,14 +90,14 @@ func (s *storagePlugin) NodeUnpublishVolume(
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
-func (s *storagePlugin) GetNodeID(
+func (s *service) GetNodeID(
 	ctx context.Context,
 	req *csi.GetNodeIDRequest) (*csi.GetNodeIDResponse, error) {
 
 	return nil, status.Error(codes.Unimplemented, "")
 }
 
-func (s *storagePlugin) NodeProbe(
+func (s *service) NodeProbe(
 	ctx context.Context,
 	req *csi.NodeProbeRequest) (*csi.NodeProbeResponse, error) {
 
@@ -108,7 +108,7 @@ func (s *storagePlugin) NodeProbe(
 	return &csi.NodeProbeResponse{}, nil
 }
 
-func (s *storagePlugin) NodeGetCapabilities(
+func (s *service) NodeGetCapabilities(
 	ctx context.Context,
 	req *csi.NodeGetCapabilitiesRequest) (
 	*csi.NodeGetCapabilitiesResponse, error) {
@@ -131,7 +131,7 @@ func mkdir(path string) (bool, error) {
 	return false, nil
 }
 
-func (s *storagePlugin) handleMount(
+func (s *service) handleMount(
 	volID string,
 	target string,
 	mf []string,
@@ -273,7 +273,7 @@ func (s *storagePlugin) handleMount(
 	return &csi.NodePublishVolumeResponse{}, nil
 }
 
-func (s *storagePlugin) getPrivateMountPoint(volID string) string {
+func (s *service) getPrivateMountPoint(volID string) string {
 	name := nfs.GetName(volID)
 	return filepath.Join(s.privDir, name)
 }
