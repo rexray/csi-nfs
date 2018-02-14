@@ -1,18 +1,21 @@
-CSI-NFS [![Build Status](http://travis-ci.org/thecodeteam/csi-nfs.svg?branch=master)](https://travis-ci.org/thecodeteam/csi-nfs)
--------
+# CSI plugin for NFS [![Build Status](http://travis-ci.org/thecodeteam/csi-nfs.svg?branch=master)]
 
+## Description
 CSI-NFS is a Container Storage Interface
-([CSI](https://github.com/container-storage-interface/spec)) plug-in
+([CSI](https://github.com/container-storage-interface/spec)) plugin
 that provides network filesystem (NFS) support.
 
 This project may be compiled as a stand-alone binary using Golang that,
 when run, provides a valid CSI endpoint. This project can also be
-vendored or built as a Golang plug-in in order to extend the functionality
+vendored or built as a Golang plugin in order to extend the functionality
 of other programs.
 
-Installation
--------------
+## Runtime Dependencies
+The node portion of the plugin can be run on any Linux node that is able to
+mount NFS volumes. The Node service verifies this by checking for the existence
+of `/sbin/mount.nfs` and `/sbin/mount.nfs4` during a `NodeProbe`.
 
+## Installation
 CSI-NFS can be installed with Go and the following command:
 
 `$ go get github.com/thecodeteam/csi-nfs`
@@ -30,94 +33,111 @@ $ go generate && go install
 
 The binary will once again be installed to `$GOPATH/bin/csi-nfs`.
 
-Starting the plugin
--------------------
+## Start plugin
+Before starting the plugin please set the environment variable
+`CSI_ENDPOINT` to a valid Go network address such as `csi.sock`:
 
-In order to execute the binary, you **must** set the env var `CSI_ENDPOINT`. CSI
-is intended to only run over UNIX domain sockets, so a simple way to set this
-endpoint to a `.sock` file in the same directory as the project is
-
-`export CSI_ENDPOINT=unix://$(go list -f '{{.Dir}}' github.com/thecodeteam/csi-nfs)/csi-nfs.sock`
-
-With that in place, you can start the plugin
-(assuming that $GOPATH/bin is in your $PATH):
-
-```sh
-$ ./csi-nfs
-INFO[0000] .Serve                                        name=csi-nfs
+```bash
+$ CSI_ENDPOINT=csi.sock csi-nfs
+INFO[0000] configured com.thecodeteam.csi-nfs            privatedir=/dev/csi-nfs-mounts
+INFO[0000] identity service registered
+INFO[0000] controller service registered
+INFO[0000] node service registered
+INFO[0000] serving                                       endpoint="unix:///csi.sock"
 ```
 
-Use ctrl-C to exit.
+The server can be shutdown by using `Ctrl-C` or sending the process
+any of the standard exit signals.
 
-You can enable debug logging (all logging goes to stdout) by setting the
-`X_CSI_NFS_DEBUG` env var. It doesn't matter what value you set it to, just that
-it is set. For example:
+## Using plugin
+The CSI specification uses the gRPC protocol for plug-in communication.
+The easiest way to interact with a CSI plugin is via the Container
+Storage Client (`csc`) program provided via the
+[GoCSI](https://github.com/thecodeteam/gocsi) project:
 
-```sh
-$ X_CSI_NFS_DEBUG= ./csi-nfs
-INFO[0000] .Serve                                        name=csi-nfs
-DEBU[0000] Added Controller Service
-DEBU[0000] Added Node Service
-^CINFO[0002] Shutting down server
+```bash
+$ go get github.com/thecodeteam/gocsi
+$ go install github.com/thecodeteam/gocsi/csc
 ```
 
-Configuring the plugin
-----------------------
+Then, have `csc` use the same `CSI_ENDPOINT`, and you can issue commands
+to the plugin. Some examples...
 
-The behavior of CSI-NFS can be modified with the following environment variables
+Get the plugin's supported versions and plugin info:
 
-| name | purpose | default |
-| - | - | - |
-| CSI_ENDPOINT | Set path to UNIX domain socket file | n/a |
-| X_CSI_NFS_DEBUG | enable debug logging to stdout | n/a |
-| X_CSI_NFS_NODEONLY | Only run the Node Service (no Controller service) | n/a |
-| X_CSI_NFS_CONTROLLERONLY | Only run the Controller Service (no Node service) | n/a |
-
-Note that the Identity service is required to always be running, and that the
-default behavior is to also run both the Controller and the Node service
-
-Using the plugin
-----------------
-
-All communication with the plugin is done via gRPC. The easiest way to interact
-with a CSI plugin via CLI is to use the `csc` tool found in
-[GoCSI](https://github.com/thecodeteam/gocsi).
-
-You can install this tool with:
-
-```sh
-go get github.com/thecodeteam/gocsi
-go install github.com/thecodeteam/gocsi/csc
+```bash
+$ csc -e csi.sock identity supported-versions
+0.1.0
+$ csc -e csi.sock -v 0.1.0 identity plugin-info
+"com.thecodeteam.csi-nfs"	"0.1.0+9"
+"commit"="8b9c33929bc954614f84d687b47dae71891d5514"
+"formed"="Tue, 13 Feb 2018 17:37:15 UTC"
+"semver"="0.1.0+9"
+"url"="https://github.com/thecodeteam/csi-nfs"
 ```
 
-With $GOPATH/bin in your $PATH, you can issue commands using the `csc` command.
-You will want to use a separate shell from where you are running the `csi-nfs`
-binary, and as such you will once again need to do:
+Publish an NFS volume to a target path:
 
-`export CSI_ENDPOINT=unix://$(go list -f '{{.Dir}}' github.com/thecodeteam/csi-nfs)/csi-nfs.sock`
 
-Here are some sample commands:
-
-```sh
-$ csc gets
-0.0.0
-$ csc getp -version 0.0.0
-csi-nfs	0.1.0
-$ csc cget -version 0.0.0
-LIST_VOLUMES
-$ showmount -e 192.168.75.2
-Exports list on 192.168.75.2:
-	/data                             192.168.75.1
-$ mkdir /mnt/test
-$ csc mnt -version 0.0.0 -targetPath /mnt/test -mode 1 host=192.168.75.2 export=/data
-$ ls -al /mnt/test
-total 1
-drwxr-xr-x   2 root  wheel    18 Jul 22 20:25 .
-drwxrwxrwt  85 root  wheel  2890 Aug 17 15:32 ..
--rw-r--r--   1 root  wheel     0 Jul 22 20:25 test
-$ csc umount -version 0.0.0 -targetPath /mnt/test host=192.168.75.2 export=/data
-$ ls -al /tmp/mnt
-total 0
-drwxr-xr-x   2 travis  wheel    68 Aug 16 15:01 .
-drwxrwxrwt  85 root    wheel  2890 Aug 17 15:32 ..
+```bash
+$ csc -e csi.sock -v 0.1.0 n publish --cap SINGLE_NODE_WRITER,mount,nfs --target-path /tmp/mnt 192.168.75.2:/data
+192.168.75.2:/data
 ```
+
+Unpublish NFS volume:
+
+```bash
+$ csc -e csi.sock -v 0.1.0 n unpublish --target-path /tmp/mnt 192.168.75.2:/data
+192.168.75.2:/data
+```
+
+## Parameters
+No additional parameters are currently supported/required by the plugin
+
+## Configuration
+The CSI-NFS plugin is built using the GoCSI package. Please see its
+[configuration section](https://github.com/thecodeteam/gocsi#configuration) for
+a complete list of the environment variables that may be used to configure this
+plugin
+
+The following table is a list of this SP's default configuration values:
+
+| Name | Value |
+|------|-------|
+| `X_CSI_SPEC_REQ_VALIDATION` | `true` |
+| `X_CSI_SERIAL_VOL_ACCESS` | `true` |
+| `X_CSI_SUPPORTED_VERSIONS` | `0.1.0` |
+| `X_CSI_PRIVATE_MOUNT_DIR` | `/dev/disk/csi-nfs-private` |
+
+## Capable operational modes
+The CSI spec defines a set of AccessModes that a volume can have. CSI-NFS
+supports the following modes for volumes :
+
+```
+// Can only be published once as read/write on a single node,
+// at any given time.
+SINGLE_NODE_WRITER = 1;
+
+// Can only be published once as readonly on a single node,
+// at any given time.
+SINGLE_NODE_READER_ONLY = 2;
+
+// Can be published as readonly at multiple nodes simultaneously.
+MULTI_NODE_READER_ONLY = 3;
+
+// Can be published at multiple nodes simultaneously. Only one of
+// the node can be used as read/write. The rest will be readonly.
+MULTI_NODE_SINGLE_WRITER = 4;
+
+// Can be published as read/write at multiple nodes
+// simultaneously.
+MULTI_NODE_MULTI_WRITER = 5;
+```
+
+The plugin attempts no verification that NFS clients and servers are configured
+correctly for multi-node writer scenarios (e.g. running `rpc.lockd` for NFSv3)
+
+## Support
+For any questions or concerns please file an issue with the
+[csi-nfs](https://github.com/thecodeteam/csi-nfs/issues) project or join
+the Slack channel #project-rexray at codecommunity.slack.com.
