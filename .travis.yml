@@ -1,9 +1,9 @@
-go_import_path: github.com/thecodeteam/csi-nfs
+sudo: false
 
 language: go
 go:
-  - 1.8.3
-  - 1.9.1
+  - 1.9.3
+go_import_path: github.com/thecodeteam/csi-nfs
 
 os:      linux
 

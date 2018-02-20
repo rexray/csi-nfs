@@ -25,3 +25,22 @@ INFO  2017/08/22 16:23:53 main.go:188: mock.GracefulStop
 INFO  2017/08/22 16:23:53 main.go:53: removed sock file: /tmp/csi.sock
 INFO  2017/08/22 16:23:53 main.go:64: server stopped gracefully
 ```
+
+## Configuration
+The Mock CSI plug-in is created using the GoCSI CSP package. Please
+see its [configuration section](../csp/README.md#configuration) for
+a complete list of the environment variables that may be used to
+configure the Mock SP.
+
+The following table is a list of the Mock SP's default configuration
+values:
+
+| Name | Value |
+|------|---------|
+| `X_CSI_IDEMP` | `true` |
+| `X_CSI_IDEMP_REQUIRE_VOL` | `true` |
+| `X_CSI_REQUIRE_NODE_ID` | `true` |
+| `X_CSI_REQUIRE_PUB_VOL_INFO` | `true` |
+| `X_CSI_CREATE_VOL_ALREADY_EXISTS` | `true` |
+| `X_CSI_DELETE_VOL_NOT_FOUND` | `true` |
+| `X_CSI_SUPPORTED_VERSIONS` | `0.1.0 0.2.0 1.0.0 1.1.0` |

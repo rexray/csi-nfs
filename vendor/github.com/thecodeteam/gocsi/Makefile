@@ -1,26 +1,33 @@
 all: build
 
 ################################################################################
+##                                 HOME                                       ##
+################################################################################
+HOME ?= /tmp/gocsi
+export HOME
+
+
+################################################################################
+##                                GOPATH                                      ##
+################################################################################
+# Ensure GOPATH is set and that it contains only a single element.
+GOPATH ?= $(HOME)/go
+GOPATH := $(word 1,$(subst :, ,$(GOPATH)))
+export GOPATH
+
+
+################################################################################
 ##                                   DEP                                      ##
 ################################################################################
-DEP := ./dep
-DEP_VER ?= 0.3.0
-DEP_ZIP := dep-$$GOHOSTOS-$$GOHOSTARCH.zip
-DEP_URL := https://github.com/golang/dep/releases/download/v$(DEP_VER)/$$DEP_ZIP
+DEP ?= ./dep
+DEP_DIR := ./vendor/github.com/golang/dep
 
 $(DEP):
-	GOVERSION=$$(go version | awk '{print $$4}') && \
-	GOHOSTOS=$$(echo $$GOVERSION | awk -F/ '{print $$1}') && \
-	GOHOSTARCH=$$(echo $$GOVERSION | awk -F/ '{print $$2}') && \
-	DEP_ZIP="$(DEP_ZIP)" && \
-	DEP_URL="$(DEP_URL)" && \
-	mkdir -p .dep && \
-	cd .dep && \
-	curl -sSLO $$DEP_URL && \
-	unzip "$$DEP_ZIP" && \
-	mv $(@F) ../ && \
-	cd ../ && \
-	rm -fr .dep
+	@rm -fr $(DEP_DIR)
+	git clone https://github.com/akutz/dep $(DEP_DIR)
+	git -C $(DEP_DIR) checkout feature/fetch-gh-pulls
+	go build -o $@ $(DEP_DIR)/cmd/dep
+
 ifneq (./dep,$(DEP))
 dep: $(DEP)
 endif
@@ -30,169 +37,100 @@ dep-ensure: | $(DEP)
 
 
 ########################################################################
-##                             PROTOC                                 ##
-########################################################################
-
-# Only set PROTOC_VER if it has an empty value.
-ifeq (,$(strip $(PROTOC_VER)))
-PROTOC_VER := 3.3.0
-endif
-
-PROTOC_OS := $(shell uname -s)
-ifeq (Darwin,$(PROTOC_OS))
-PROTOC_OS := osx
-endif
-
-PROTOC_ARCH := $(shell uname -m)
-ifeq (i386,$(PROTOC_ARCH))
-PROTOC_ARCH := x86_32
-endif
-
-PROTOC := ./protoc
-PROTOC_ZIP := protoc-$(PROTOC_VER)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
-PROTOC_URL := https://github.com/google/protobuf/releases/download/v$(PROTOC_VER)/$(PROTOC_ZIP)
-PROTOC_TMP_DIR := .protoc
-PROTOC_TMP_BIN := $(PROTOC_TMP_DIR)/bin/protoc
-
-$(PROTOC):
-	-mkdir -p "$(PROTOC_TMP_DIR)" && \
-	  curl -L $(PROTOC_URL) -o "$(PROTOC_TMP_DIR)/$(PROTOC_ZIP)" && \
-	  unzip "$(PROTOC_TMP_DIR)/$(PROTOC_ZIP)" -d "$(PROTOC_TMP_DIR)" && \
-	  chmod 0755 "$(PROTOC_TMP_BIN)" && \
-	  cp -f "$(PROTOC_TMP_BIN)" "$@"
-	-rm -fr "$(PROTOC_TMP_DIR)"
-	stat "$@" > /dev/null 2>&1
-
-
-########################################################################
-##                          PROTOC-GEN-GO                             ##
-########################################################################
-
-# This is the recipe for getting and installing the go plug-in
-# for protoc
-PROTOC_GEN_GO_PKG := ./vendor/github.com/golang/protobuf/protoc-gen-go
-PROTOC_GEN_GO := protoc-gen-go
-$(PROTOC_GEN_GO):
-	go build -o "$@" $(PROTOC_GEN_GO_PKG)
-
-# Update PATH with the current directory. This enables the protoc
-# binary to discover the protoc-gen-go binary, built inside this
-# directory.
-export PATH := $(shell pwd):$(PATH)
-
-
-########################################################################
 ##                               CSI SPEC                             ##
 ########################################################################
-
-# The paths of the CSI spec, protobuf, and Go source file.
-CSI_SPEC :=  vendor/github.com/container-storage-interface/spec/spec.md
-CSI_PROTO := csi/csi.proto
-CSI_GOSRC := csi/csi.pb.go
-
-# The temporary area and files used to build and compare updated
-# file content.
-CSI_TMP_DIR := csi/.build
-CSI_PROTO_TMP := $(CSI_TMP_DIR)/csi.proto
-CSI_GOSRC_TMP := $(CSI_TMP_DIR)/csi.pb.go
-
-# This is the target for building the temporary CSI protobuf file.
-#
-# The temporary file is not versioned, and thus will always be
-# built on Travis-CI.
-$(CSI_PROTO_TMP): $(CSI_SPEC)
-	@mkdir -p "$(@D)"
-	sed -n -e '/```protobuf$$/,/```$$/ p' "$<" | \
-	  sed -e 's@^```.*$$@////////@g' > "$@"
-.PHONY: $(CSI_PROTO_TMP)
-
-
-# If SKIP_CODEGEN is true then do not define a recipe for
-# generating the protobuf.
-ifneq (true,$(SKIP_CODEGEN))
-
-# This is the target for building the CSI protobuf file.
-#
-# This target depends on its temp file, which is not versioned.
-# Therefore when built on Travis-CI the temp file will always
-# be built and trigger this target. On Travis-CI the temp file
-# is compared with the real file, and if they differ the build
-# will fail.
-#
-# Locally the temp file is simply copied over the real file.
-$(CSI_PROTO): $(CSI_PROTO_TMP)
-ifeq (true,$(TRAVIS))
-	diff "$@" "$<"
-else
-	diff "$@" "$<" > /dev/null 2>&1 || cp -f "$<" "$@"
-endif
-
-endif
-
-# This recipe generates the Go bindings to a temp area.
-$(CSI_GOSRC_TMP): $(CSI_PROTO) | $(PROTOC) $(PROTOC_GEN_GO)
-	@mkdir -p "$(@D)"
-	$(PROTOC) -I "$(<D)" --go_out=plugins=grpc:"$(@D)" "$<"
-
-# If SKIP_CODEGEN is true then do not define a recipe for
-# generating the Go language binding.
-ifneq (true,$(SKIP_CODEGEN))
-
-# The temp language bindings are compared to the ones that are
-# versioned. If they are different then it means the language
-# bindings were not updated prior to being committed.
-$(CSI_GOSRC): $(CSI_GOSRC_TMP)
-ifeq (true,$(TRAVIS))
-	diff "$@" "$<"
-else
-	diff "$@" "$<" > /dev/null 2>&1 || cp -f "$<" "$@"
-endif
-
-endif
-
-
-########################################################################
-##                     COMP W CSI SPEC MASTER                         ##
-########################################################################
-
-CSI_SPEC_MASTER := $(CSI_TMP_DIR)/csi.proto.master
-
-CSI_SPEC_MASTER_URI := https://raw.githubusercontent.com/container-storage-interface/spec/master/spec.md
-$(CSI_SPEC_MASTER):
-	@mkdir -p "$(@D)"
-	curl -sSL $(CSI_SPEC_MASTER_URI) | \
-	  sed -n -e '/```protobuf$$/,/```$$/ p' | \
-	  sed -e 's@^```.*$$@////////@g' > "$@"
-
-# This recipe fetches the "spec.md" file from the "master" branch of the
-# CSI spec repo and compares the generated protobuf with one generated
-# from the aforementioned spec. If there is a difference between the
-# two files this recipe will fail.
-#
-# Upon failure, aside from the output from the diff command, the last
-# line will print the Git commit ID of the spec.md that was used
-# in the comparison.
-CSI_SPEC_MASTER_GIT := https://github.com/container-storage-interface/spec.git
-csi-spec-comp-master: $(CSI_SPEC_MASTER) $(CSI_PROTO)
-	-diff $^ || \
-	git ls-remote -h $(CSI_SPEC_MASTER_GIT) | grep master | awk '{print $$1}'
-
-.PHONY: csi-spec-comp-master $(CSI_SPEC_MASTER)
+CSI_SPEC :=  vendor/github.com/container-storage-interface/spec
+CSI_GOSRC := $(CSI_SPEC)/lib/go/csi/csi.pb.go
 
 
 ########################################################################
 ##                               GOCSI                                ##
 ########################################################################
+CONTEXT_A := context.a
+$(CONTEXT_A): context/*.go
+	@go install ./$(basename $(@F))
+	go build -o "$@" ./$(basename $(@F))
+
+MIDDLEWARE_PKGS := $(addsuffix .a,$(filter-out %.a,$(wildcard middleware/*)))
+$(MIDDLEWARE_PKGS): %.a: $(wildcard %/*.go)
+	@go install ./middleware/$(basename $(@F))
+	go build -o "$@" ./middleware/$(basename $(@F))
+middleware: $(MIDDLEWARE_PKGS)
+.PHONY: middleware
+
+UTILS_A := utils.a
+$(UTILS_A): utils/*.go
+	@go install ./$(basename $(@F))
+	go build -o "$@" ./$(basename $(@F))
+
+GOCSI_A_PKG_DEPS := $(CONTEXT_A) $(MIDDLEWARE_PKGS) $(UTILS_A)
 
 GOCSI_A := gocsi.a
-$(GOCSI_A): $(CSI_GOSRC) *.go
+$(GOCSI_A): $(CSI_GOSRC) *.go $(GOCSI_A_PKG_DEPS)
 	@go install .
 	go build -o "$@" .
 
-MOUNT_A := mount.a
-$(MOUNT_A): mount/*.go
-	@go install ./mount
-	go build -o "$@" ./mount
+
+########################################################################
+##                               CSI-SP                               ##
+########################################################################
+CSI_SP_IMPORT := csi-sp
+CSI_SP_DIR := $(GOPATH)/src/$(CSI_SP_IMPORT)
+CSI_SP := $(CSI_SP_DIR)/csi-sp
+CSI_SP_SOCK := $(notdir $(CSI_SP)).sock
+CSI_SP_LOG := $(notdir $(CSI_SP)).log
+GOCSI_SH_ENV := USE_DEP=true
+GOCSI_SH_ENV += DEP_GIT_REFSPECS=+refs/pull/*:refs/pull/origin/*
+ifeq (true,$(TRAVIS))
+GOCSI_SH_ENV += GOCSI_DEP_SOURCE=https://github.com/$(TRAVIS_REPO_SLUG)
+GOCSI_SH_ENV += GOCSI_DEP_REVISION=$(TRAVIS_COMMIT)
+endif
+$(CSI_SP): | $(DEP)
+	DEP=$(abspath $(DEP)) $(GOCSI_SH_ENV) ./gocsi.sh $(CSI_SP_IMPORT)
+
+csi-sp: $(CSI_SP_LOG)
+$(CSI_SP_LOG): $(CSI_SP)
+	$(MAKE) -C csc
+	@echo && \
+	  printf '=%.0s' $$(seq 1 80) && printf '\n== ' && \
+	  printf "%-74s" "starting $(<F)" && printf ' ==\n' && \
+	  printf '=%.0s' $$(seq 1 80) && echo
+	CSI_ENDPOINT=$(CSI_SP_SOCK) \
+	  X_CSI_LOG_LEVEL=debug \
+	  X_CSI_REQ_LOGGING=true \
+	  X_CSI_REP_LOGGING=true \
+	  X_CSI_SUPPORTED_VERSIONS="0.1.0 0.1.1 0.2.0" \
+	  X_CSI_PLUGIN_INFO="My CSI Plug-in,0.1.0,status=online" \
+	  $< > $(CSI_SP_LOG) 2>&1 &
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+	  if grep -q "msg=serving" $(CSI_SP_LOG); then break; \
+	  else sleep 0.1; fi \
+	done
+	@echo && \
+	  printf '=%.0s' $$(seq 1 80) && printf '\n== ' && \
+	  printf "%-74s" "invoking GetSupportedVersions" && printf ' ==\n' && \
+	  printf '=%.0s' $$(seq 1 80) && echo
+	csc/csc -e $(CSI_SP_SOCK) i version
+	@echo && \
+	  printf '=%.0s' $$(seq 1 80) && printf '\n== ' && \
+	  printf "%-74s" "invoking GetPluginInfo" && printf ' ==\n' && \
+	  printf '=%.0s' $$(seq 1 80) && echo
+	csc/csc -e $(CSI_SP_SOCK) i info -v 0.1.0
+	@echo && \
+	  printf '=%.0s' $$(seq 1 80) && printf '\n== ' && \
+	  printf "%-74s" "killing $(<F) with SIGINT" && printf ' ==\n' && \
+	  printf '=%.0s' $$(seq 1 80) && echo
+	pkill -2 $(<F)
+	@echo && \
+	  printf '=%.0s' $$(seq 1 80) && printf '\n== ' && \
+	  printf "%-74s" "$(<F) log file" && printf ' ==\n' && \
+	  printf '=%.0s' $$(seq 1 80) && echo
+	@cat $(CSI_SP_LOG)
+
+csi-sp-clean:
+	rm -fr $(CSI_SP_LOG) $(CSI_SP_DIR)/*
+
+.PHONY: csi-sp csi-sp-clean
 
 
 ########################################################################
@@ -200,8 +138,18 @@ $(MOUNT_A): mount/*.go
 ########################################################################
 GINKGO := ./ginkgo
 GINKGO_PKG := ./vendor/github.com/onsi/ginkgo/ginkgo
-$(GINKGO):
-	go build -o "$@" $(GINKGO_PKG)
+GINKGO_SECS := 20
+ifeq (true,$(TRAVIS))
+GINKGO_SECS := 30
+endif
+GINKGO_RUN_OPTS := --slowSpecThreshold=$(GINKGO_SECS) -randomizeAllSpecs -p
+$(GINKGO): | $(GINKGO_PKG)
+	go build -o "$@" "./$|"
+
+ETCD := ./etcd
+$(ETCD):
+	go get -u -d github.com/coreos/etcd
+	go build -o $@ github.com/coreos/etcd
 
 # The test recipe executes the Go tests with the Ginkgo test
 # runner. This is the reason for the boolean OR condition
@@ -210,31 +158,46 @@ $(GINKGO):
 # uses if it detects programmatic involvement. Please see
 # https://goo.gl/CKz4La for more information.
 ifneq (true,$(TRAVIS))
-test: build
+test:  build
 endif
-test: | $(GINKGO)
-	$(GINKGO) -v . || test "$$?" -eq "197"
 
-.PHONY: test
+# Because Travis-CI's containers have limited resources, the Mock SP's
+# serial volume access provider's timeout needs to be increased from the
+# default value of 0 to 3s. This ensures that lack of system resources
+# will not prevent a single, non-concurrent RPC from failing due to an
+# OpPending error.
+ifeq (true,$(TRAVIS))
+export X_CSI_SERIAL_VOL_ACCESS_TIMEOUT=3s
+endif
+
+test: | $(GINKGO) $(ETCD)
+	$(GINKGO) $(GINKGO_RUN_OPTS) ./utils || test "$$?" -eq "197"
+	@rm -fr default.etcd etcd.log
+	./etcd > etcd.log 2>&1 &
+	X_CSI_SERIAL_VOL_ACCESS_ETCD_ENDPOINTS=127.0.0.1:2379 \
+	  $(GINKGO) $(GINKGO_RUN_OPTS) -skip "Idempotent Create" \
+	  ./testing || test "$$?" -eq "197"
+	pkill etcd
+	$(GINKGO) $(GINKGO_RUN_OPTS) -focus "Idempotent Create" \
+	  ./testing || test "$$?" -eq "197"
 
 
 ########################################################################
 ##                               BUILD                                ##
 ########################################################################
 
-build: $(GOCSI_A) $(MOUNT_A)
+build: $(GOCSI_A)
 	$(MAKE) -C csc $@
 	$(MAKE) -C mock $@
 
 clean:
-	go clean -i -v .
-	rm -f "$(GOCSI_A)" "$(CSI_PROTO)" "$(CSI_GOSRC)"
+	go clean -i -v . ./csp
+	rm -f $(GOCSI_A) $(GOCSI_A_PKG_DEPS)
 	$(MAKE) -C csc $@
 	$(MAKE) -C mock $@
 
 clobber: clean
-	rm -fr "$(CSI_TMP_DIR)"
 	$(MAKE) -C csc $@
 	$(MAKE) -C mock $@
 
-.PHONY: build test clean clobber
+.PHONY: build test bench clean clobber

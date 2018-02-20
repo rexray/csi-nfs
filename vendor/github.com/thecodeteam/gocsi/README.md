@@ -3,207 +3,425 @@ The Container Storage Interface
 ([CSI](https://github.com/container-storage-interface/spec))
 is an industry standard specification for creating storage plug-ins
 for container orchestrators. GoCSI aids in the development and testing
-of CSI plug-ins and provides the following:
+of CSI storage plug-ins (SP):
 
 | Component | Description |
 |-----------|-------------|
-| [GoCSI](#library) | CSI Go library |
-| [csc](#client) | CSI command line interface (CLI) client |
-| [mock](#mock-plug-in) | CSI mock plug-in |
+| [csc](./csc/) | CSI command line interface (CLI) client |
+| [gocsi](#bootstrapper) | Go-based CSI SP bootstrapper  |
+| [mock](./mock) | Mock CSI SP |
 
-## Library
-The root of the GoCSI project is a general purpose library for CSI
-that contains package-level functions for invoking the CSI Controller,
-Identity, and Node RPCs in addition to the following gRPC client and
-server interceptors:
+## Quick Start
+The following example illustrates using Docker in combination with the
+GoCSI SP bootstrapper to create a new CSI SP from scratch, serve it on a
+UNIX socket, and then use the GoCSI command line client [`csc`](./csc/) to
+invoke the `GetSupportedVersions` and `GetPluginInfo` RPCs:
 
-| Type | Name | Description |
-|------|------|-------------|
-| Unary, client interceptor | `ClientCheckResponseError` | Parses CSI errors into Go errors
-|                           | `ClientResponseValidator` | Validates responses |
-| Unary, server interceptor | `RequestIDInjector` | Injects a unique ID into a gRPC request |
-|                           | `ServerRequestLogger` | Logs requests |
-|                           | `ServerResponseLogger` | Logs responses |
-|                           | `ServerRequestVersionValidator` | Validates request versions |
-|                           | `ServerRequestValidator` | Validates requests |
-|                           | `IdempotentInterceptor` | Provides serial access and idempotency for volume-related CSI RPCs |
-
-Examples illustrating the above interceptors and invoking the CSI RPCs
-may be found in the GoCSI test suite, the CSI client, and the CSI mock
-plug-in.
-
-## Client
-The CSI client `csc` is useful when developing and testing CSI plug-ins
-because `csc` can easily and directly invoke any of CSI's RPCs directly
-from the command line.
-
-Please see the `csc` package for
-[additional documentation](./csc/README.md).
-
-## Mock Plug-in
-The mock plug-in is a stand-alone binary that implements the CSI
-Controller, Identity, and Node RPCs in addition to the specification's
-requirements regarding idempotency.
-
-Please see the `mock` package for
-[additional documentation](./mock/README.md).
-
-## CSI Specification Version
-GoCSI references the
-[CSI spec](https://github.com/container-storage-interface/spec)
-project in order to obtain the CSI specification.
-
-Please see the `csi` package for
-[additional documentation](./csi/README.md).
-
-## Build Reference
-GoCSI is _go gettable_ - that means it is possible to build GoCSI with
-the following command:
-
-```bash
-$ go get github.com/thecodeteam/gocsi
+```shell
+$ docker run -it golang:latest sh -c \
+  "go get github.com/thecodeteam/gocsi && \
+  make -C src/github.com/thecodeteam/gocsi csi-sp"
 ```
 
-If GoCSI has already been cloned locally via Git or the aforementioned
-`go get` command then there are two ways to build GoCSI:
+<a name="bootstrapper"></a>
+## Bootstrapping a Storage Plug-in
+The root of the GoCSI project enables storage administrators and developers
+alike to bootstrap a CSI SP:
 
-1. [Build with Go](#building-with-go)
-2. [Build with Make](#building-with-make)
-
-### Building with Go
-The following commands will build GoCSI's client and mock plug-in:
-
-```bash
-$ go build -o csc/csc ./csc && go build -o mock/mock ./mock
+```shell
+$ ./gocsi.sh
+usage: ./gocsi.sh GO_IMPORT_PATH
 ```
 
-The above command produces CSI client and mock plug-in binaries at
-`csc/csc` and `mock/mock`.
+### Bootstrap Example
+The GoCSI [Mock SP](./mock) illustrates the features and configuration options
+available via the bootstrapping method. The following example demonstrates
+creating a new SP at the Go import path `github.com/thecodeteam/csi-sp`:
 
-### Building with Make
-Make can be used to build all of GoCSI's components with a single command:
-
-```bash
-$ make
+```shell
+$ ./gocsi.sh github.com/thecodeteam/csi-sp
+creating project directories:
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/provider
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/service
+creating project files:
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/main.go
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/provider/provider.go
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/service/service.go
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/service/controller.go
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/service/identity.go
+  /home/akutz/go/src/github.com/thecodeteam/csi-sp/service/node.go
+use golang/dep? Enter yes (default) or no and press [ENTER]:
+  downloading golang/dep@v0.3.2
+  executing dep init
+building csi-sp:
+  success!
+  example: CSI_ENDPOINT=csi.sock \
+           /home/akutz/go/src/github.com/thecodeteam/csi-sp/csi-sp
 ```
 
-The above command will verify that the generated protobuf and Go
-language bindings are up-to-date and that the GoCSI library, client,
-and mock plug-in all build successfully.
+The new SP adheres to the following structure:
 
-## Testing
-The GoCSI test suite makes use of the Mock plug-in in order to provide
-a CSI endpoint that hosts the Controller, Identity, and Node services.
-The following command can be used to execute the test suite:
-
-```bash
-$ go test
+```
+|-- provider
+|   |
+|   |-- provider.go
+|
+|-- service
+|   |
+|   |-- controller.go
+|   |-- identity.go
+|   |-- node.go
+|   |-- service.go
+|
+|-- main.go
 ```
 
-The above command is the simplest way to run the GoCSI tests. However,
-there are more advanced test scenarios:
+### Provider
+The `provider` package leverages GoCSI to construct an SP from the CSI
+services defined in `service` package. The file `provider.go` may be
+modified to:
 
-| Test Scenario | Description |
-|---------------|-------------|
-| [Ginkgo](#ginkgo) | Using the Ginkgo test runner |
-| [`CSI_ENDPOINT`](#csi_endpoint) | Using an external server endpoint |
-| [`GOCSI_MOCK`](#gocsi_mock) | Specifying the path to the server binary |
-| [`GOCSI_TEST_DEBUG`](#gocsi_test_debug) | Showing the server process output |
+* Supply default values for the SP's environment variable configuration properties
 
-### Ginkgo
-The GoCSI tests are written using the
-[Ginkgo](http://onsi.github.io/ginkgo/) natural language testing
-domain-specific-language (DSL). To take full advantage of GoCSI's test
-capabilities the Ginkgo and Gomega dependencies are required and are
-included in the GoCSI's `vendor` directory.
+The generated file configures the following options and their default values:
 
-Either of the following two commands may be used to build the Ginkgo
-test runner:
+| Option | Value | Description |
+|--------|-------|-------------|
+| `X_CSI_SUPPORTED_VERSIONS` | `0.0.0` | The CSI versions supported by the SP. Settings this option also relieves the SP of its responsibility to provide an implementation of the RPC `GetSupportedVersions` |
 
-1. `$ go build ./vendor/github.com/onsi/ginkgo/ginkgo`
-2. `$ make ginkgo`
+Please see the Mock SP's [`provider.go`](./mock/provider/provider.go) file
+for a more complete example.
 
-Both of the above commands will place the `ginkgo` binary in the GoCSI
-project's root directory.
+### Service
+The `service` package is where the business logic occurs. The files `controller.go`,
+`identity.go`, and `node.go` each correspond to their eponymous CSI services. A
+developer creating a new CSI SP with GoCSI will work mostly in these files. Each
+of the files have a complete skeleton implementation for their respective service's
+remote procedure calls (RPC).
 
-To execute the GoCSI test suite with Ginkgo please use one of the two
-commands below:
+### Main
+The root, or `main`, package leverages GoCSI to launch the SP as a stand-alone
+server process. The only requirement is that the environment variable `CSI_ENDPOINT`
+must be set, otherwise a help screen is emitted that lists all of the SP's available
+configuration options (environment variables).
 
-1. `$ ./ginkgo`
-2. `$ make test`
+## Configuration
+All CSI SPs created using this package are able to leverage the following
+environment variables:
 
-The first command produces output nearly identical to the output of
-`go test`. Use `./ginkgo -?` to print a list of all the flags and
-options available to the Ginkgo test runner.
-
-The second command simply ensures that GoCSI's generated sources and
-client and mock binaries are up-to-date before executing `./ginkgo -v`.
-The `-v` flag executes the tests in verbose mode, printing the names
-of each of the test cases as they're executed.
-
-### `CSI_ENDPOINT`
-When the GoCSI test suite is executed the first thing that occurs is
-checking for the value of the environment variable `CSI_ENDPOINT`.
-If `CSI_ENDPOINT` is set then the test suite will **not** create a new
-server for every test case using the mock plug-in. Instead all test
-cases are executed against the server specified by `CSI_ENDPOINT`.
-
-Please note that using an external CSI server with the test suite will
-likely result in failure as the test cases expect a new Mock server
-instance at the start of each test case. Still, this is a helpful
-feature when wanting to run the Mock plug-in separately in order to
-watch its output when executing a specific test case against it.
-
-### `GOCSI_MOCK`
-If the `CSI_ENDPOINT` environment variable is not set the environment
-variable `GOCSI_MOCK` is checked. This variable's value should be the
-fully-qualified to a binary that starts a CSI plug-in. The binary is
-started with a clean environment except for a single environment
-variable, `CSI_ENDPOINT`, which points to a temporary file that the
-server should use as the UNIX socket for serving the CSI gRPC services.
-
-If the `GOCSI_MOCK` environment variable is **not** set then the GoCSI
-test suite will automatically build the GoCSI Mock plug-in binary
-before executing any test cases:
-
-```bash
-$ go build -o mock github.com/thecodeteam/gocsi/mock
-```
-
-The above command builds the Mock plug-in binary in the working,
-temporary directory of the test process. The GoCSI test suite then uses
-this binary to launch a new CSI server for each test case. This binary
-is removed when the test execution completes and the temporary test
-directory and its contents are removed.
-
-Because the Mock plug-in binary is built automatically if `GOCSI_MOCK`
-is not set, it means the following two commands are in fact identical:
-
-```bash
-# Build the Mock plug-in binary and then launch the test suite while
-# specifying the path to the binary with GOCSI_MOCK
-$ go build -o mock/mock ./mock && GOCSI_MOCK=$(pwd)/mock/mock go test
-
-# Launch the GoCSI test suite without specifying GOCSI_MOCK. This causes
-# the test process to automatically build the Mock plug-in binary and
-# use it for the test run
-$ go test
-```
-
-### `GOCSI_TEST_DEBUG`
-Setting the environment variable `GOCSI_TEST_DEBUG` to `true` causes
-the GoCSI test suite to read the `STDOUT` and `STDERR` pipes of the
-server process launched with each test case and copy the contents of
-the streams to the test process's own `STDOUT` and `STDERR` pipes.
-
-This will clutter the test output with the output of the CSI server
-processes, but it is useful when debugging.
-
-Still, a cleaner solution for viewing the server output might be to
-launch the Mock plug-in in a stand-alone process and then run the test
-suite while setting [`CSI_ENDPOINT`](#csi_endpoint) to the same UNIX
-socket used by the stand-alone Mock plug-in instance.
-
-Please note that `GOCSI_TEST_DEBUG` is not supported when used in
-conjunction with `CSI_ENDPOINT` as the test suite cannot read the
-`STDOUT` and `STDERR` pipes of an existing process.
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>CSI_ENDPOINT</code></td>
+      <td>
+        <p>The CSI endpoint may also be specified by the environment variable
+        CSI_ENDPOINT. The endpoint should adhere to Go's network address
+        pattern:</p>
+        <ul>
+          <li><code>tcp://host:port</code></li>
+          <li><code>unix:///path/to/file.sock</code></li>
+        </ul>
+        <p>If the network type is omitted then the value is assumed to be an
+        absolute or relative filesystem path to a UNIX socket file.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_ENDPOINT_PERMS</code></td>
+      <td>
+        <p>When <code>CSI_ENDPOINT</code> is set to a UNIX socket file
+        this environment variable may be used to specify the socket's file
+        permissions. Please note this value has no effect if
+        <code>CSI_ENDPOINT</code> specifies a TCP socket.</p>
+        <p>The default value is 0755.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_ENDPOINT_USER</code></td>
+      <td>
+        <p>When <code>CSI_ENDPOINT</code> is set to a UNIX socket file
+        this environment variable may be used to specify the UID or name
+        of the user that owns the file. Please note this value has no effect
+        if <code>CSI_ENDPOINT</code> specifies a TCP socket.</p>
+        <p>The default value is the user that starts the process.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_ENDPOINT_GROUP</code></td>
+      <td>
+        <p>When <code>CSI_ENDPOINT</code> is set to a UNIX socket file
+        this environment variable may be used to specify the GID or name
+        of the group that owns the file. Please note this value has no effect
+        if <code>CSI_ENDPOINT</code> specifies a TCP socket.</p>
+        <p>The default value is the group that starts the process.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_DEBUG</code></td>
+      <td>A <code>true</code> value is equivalent to:
+        <ul>
+          <li><code>X_CSI_LOG_LEVEL=debug</code></li>
+          <li><code>X_CSI_REQ_LOGGING=true</code></li>
+          <li><code>X_CSI_REP_LOGGING=true</code></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_LOG_LEVEL</code></td>
+      <td>
+        <p>The log level. Valid values include:</p>
+        <ul>
+          <li><code>PANIC</code></li>
+          <li><code>FATAL</code></li>
+          <li><code>ERROR</code></li>
+          <li><code>WARN</code></li>
+          <li><code>INFO</code></li>
+          <li><code>DEBUG</code></li>
+        </ul>
+        <p>The default value is <code>WARN</code>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SUPPORTED_VERSIONS</code></td>
+      <td>A space-delimited list of versions formatted
+      <code>MAJOR.MINOR.PATCH.</code> Setting this environment variable
+      bypasses the SP's <code>GetSupportedVersions</code> RPC and returns
+      this list of versions instead.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQ_LOGGING</code></td>
+      <td><p>A flag that enables logging of incoming requests to
+      <code>STDOUT</code>.</p>
+      <p>Enabling this option sets <code>X_CSI_REQ_ID_INJECTION=true</code>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REP_LOGGING</code></td>
+      <td><p>A flag that enables logging of incoming responses to
+      <code>STDOUT</code>.</p>
+      <p>Enabling this option sets <code>X_CSI_REQ_ID_INJECTION=true</code>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQ_ID_INJECTION</code></td>
+      <td>A flag that enables request ID injection. The ID is parsed from
+      the incoming request's metadata with a key of
+      <code>csi.requestid</code>.
+      If no value for that key is found then a new request ID is
+      generated using an atomic sequence counter.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SPEC_VALIDATION</code></td>
+      <td>Setting <code>X_CSI_SPEC_VALIDATION=true</code> is the same as:
+        <ul>
+          <li><code>X_CSI_SPEC_REQ_VALIDATION=true</code></li>
+          <li><code>X_CSI_SPEC_REP_VALIDATION=true</code></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SPEC_REQ_VALIDATION</code></td>
+      <td>A flag that enables the validation of CSI request messages.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SPEC_REP_VALIDATION</code></td>
+      <td>A flag that enables the validation of CSI response messages.
+      Invalid responses are marshalled into a gRPC error with a code
+      of <code>Internal</code>.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_NODE_ID</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul>
+          <li><code>ControllerPublishVolumeRequest.NodeId</code></li>
+          <li><code>GetNodeIDResponse.NodeId</code></li>
+      </ul>
+      <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_PUB_VOL_INFO</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul>
+          <li><code>ControllerPublishVolumeResponse.PublishVolumeInfo</code></li>
+          <li><code>NodePublishVolumeRequest.PublishVolumeInfo</code></li>
+        </ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_VOL_ATTRIBS</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul>
+          <li><code>ControllerPublishVolumeRequest.VolumeAttributes</code></li>
+          <li><code>ValidateVolumeCapabilitiesRequest.VolumeAttributes</code></li>
+          <li><code>NodePublishVolumeRequest.VolumeAttributes</code></li>
+        </ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS</code></td>
+      <td>A <code>true</code> value is equivalent to:
+        <ul>
+          <li><code>X_CSI_REQUIRE_CREDS_CREATE_VOL=true</code></li>
+          <li><code>X_CSI_REQUIRE_CREDS_DELETE_VOL=true</code></li>
+          <li><code>X_CSI_REQUIRE_CREDS_CTRLR_PUB_VOL=true</code></li>
+          <li><code>X_CSI_REQUIRE_CREDS_CTRLR_UNPUB_VOL=true</code></li>
+          <li><code>X_CSI_REQUIRE_CREDS_NODE_PUB_VOL=true</code></li>
+          <li><code>X_CSI_REQUIRE_CREDS_NODE_UNPUB_VOL=true</code></li>
+        </ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_CREATE_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>CreateVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_DELETE_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>DeleteVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_CTRLR_PUB_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>ControllerPublishVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_CTRLR_UNPUB_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>ControllerUnpublishVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_NODE_PUB_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>NodePublishVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_REQUIRE_CREDS_NODE_UNPUB_VOL</code></td>
+      <td>
+        <p>A flag that enables treating the following fields as required:</p>
+        <ul><li><code>NodeUnpublishVolumeRequest.UserCredentials</code></li></ul>
+        <p>Enabling this option sets <code>X_CSI_SPEC_REQ_VALIDATION=true</code></p>
+      </td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS</code></td>
+      <td>A flag that enables the serial volume access middleware.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_TIMEOUT</code></td>
+      <td>A <a href="https://golang.org/pkg/time/#ParseDuration"><code>
+      time.Duration</code></a> string that determines how long the
+      serial volume access middleware waits to obtain a lock for the request's
+      volume before returning the gRPC error code <code>FailedPrecondition</code> to
+      indicate an operation is already pending for the specified volume.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_ENDPOINTS</code></td>
+      <td>A list comma-separated etcd endpoint values. If this environment
+      variable is defined then the serial volume access middleware will
+      automatically use etcd for locking, providing distributed serial
+      volume access.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_DOMAIN</code></td>
+      <td>The etcd key prefix to use with the locks that provide
+      distributed, serial volume access. The key paths are:
+      <ul>
+        <li><code>/DOMAIN/volumesByID/VOLUME_ID</code></li>
+        <li><code>/DOMAIN/volumesByName/VOLUME_NAME</code></li>
+      </ul></td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_TTL</code></td>
+      <td>The length of time etcd will wait before  releasing ownership of
+      a distributed lock if the lock's session has not been renewed.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_AUTO_SYNC_INTERVAL</code></td>
+      <td>A time.Duration string that specifies the interval to update
+      endpoints with its latest members. A value of 0 disables
+      auto-sync. By default auto-sync is disabled.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_DIAL_TIMEOUT</code></td>
+      <td>A time.Duration string that specifies the timeout for failing to
+      establish a connection.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_DIAL_KEEP_ALIVE_TIME</code></td>
+      <td>A time.Duration string that defines the time after which the client
+      pings the server to see if the transport is alive.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_DIAL_KEEP_ALIVE_TIMEOUT</code></td>
+      <td>A time.Duration string that defines the time that the client waits for
+      a response for the keep-alive probe. If the response is not received
+      in this time, the connection is closed.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_MAX_CALL_SEND_MSG_SZ</code></td>
+      <td>Defines the client-side request send limit in bytes. If 0, it defaults
+      to 2.0 MiB (2 * 1024 * 1024). Make sure that "MaxCallSendMsgSize" <
+      server-side default send/recv limit. ("--max-request-bytes" flag to
+      etcd or "embed.Config.MaxRequestBytes").</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_MAX_CALL_RECV_MSG_SZ</code></td>
+      <td>Defines the client-side response receive limit. If 0, it defaults to
+      "math.MaxInt32", because range response can easily exceed request send
+      limits. Make sure that "MaxCallRecvMsgSize" >= server-side default
+      send/recv limit. ("--max-request-bytes" flag to etcd or
+      "embed.Config.MaxRequestBytes").</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_USERNAME</code></td>
+      <td>The user name used for authentication.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_PASSWORD</code></td>
+      <td>The password used for authentication.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_REJECT_OLD_CLUSTER</code></td>
+      <td>A flag that indicates refusal to create a client against an outdated
+      cluster.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_TLS</code></td>
+      <td>A flag that indicates the client should use TLS.</td>
+    </tr>
+    <tr>
+      <td><code>X_CSI_SERIAL_VOL_ACCESS_ETCD_TLS_INSECURE</code></td>
+      <td>A flag that indicates the TLS connection should not verify peer
+      certificates.</td>
+    </tr>
+  </tbody>
+</table>

@@ -2,9 +2,45 @@
 
 
 [[projects]]
+  name = "github.com/container-storage-interface/spec"
+  packages = ["lib/go/csi"]
+  revision = "9e88e4bfabeca1b8e4810555815f112159292ada"
+  version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/coreos/etcd"
+  packages = [
+    "auth/authpb",
+    "clientv3",
+    "clientv3/concurrency",
+    "etcdserver/api/v3rpc/rpctypes",
+    "etcdserver/etcdserverpb",
+    "mvcc/mvccpb",
+    "pkg/types"
+  ]
+  revision = "c23606781f63d09917a1e7abfcefeb337a9608ea"
+  version = "v3.3.0"
+
+[[projects]]
+  name = "github.com/gogo/protobuf"
+  packages = [
+    "gogoproto",
+    "proto",
+    "protoc-gen-gogo/descriptor"
+  ]
+  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
-  packages = ["proto","ptypes/any"]
+  packages = [
+    "proto",
+    "ptypes",
+    "ptypes/any",
+    "ptypes/duration",
+    "ptypes/timestamp"
+  ]
   revision = "748d386b5c1ea99658fd69fe9f03991ce86a90c1"
 
 [[projects]]
@@ -14,16 +50,32 @@
   revision = "89742aefa4b206dcf400792f3bd35b542998eb3b"
 
 [[projects]]
-  branch = "master"
   name = "github.com/thecodeteam/gocsi"
-  packages = [".","csi","mount"]
-  revision = "83f15105815b4bdc0d4f52796a458d2ce9e588fe"
+  packages = [
+    ".",
+    "context",
+    "middleware/logging",
+    "middleware/requestid",
+    "middleware/serialvolume",
+    "middleware/serialvolume/etcd",
+    "middleware/serialvolume/types",
+    "middleware/specvalidator",
+    "utils"
+  ]
+  revision = "0e5e59df1510afe4f1986cd35fe127fc65821eb6"
+  version = "v0.3.0"
 
 [[projects]]
-  name = "github.com/thecodeteam/goioc"
+  name = "github.com/thecodeteam/gofsutil"
   packages = ["."]
-  revision = "bcc5c533363c5bb3eb0651a1413889ec71822200"
-  version = "v0.2.0"
+  revision = "56ae374ef75adf5ca8ea6b4b79d97175cb86deb2"
+  version = "v0.1.2"
+
+[[projects]]
+  name = "github.com/thecodeteam/gosync"
+  packages = ["."]
+  revision = "94b0033d0b5fc254594c3174329c19356c2c4f63"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -34,19 +86,40 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
+  packages = [
+    "context",
+    "http2",
+    "http2/hpack",
+    "idna",
+    "internal/timeseries",
+    "lex/httplex",
+    "trace"
+  ]
   revision = "f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix","windows"]
+  packages = [
+    "unix",
+    "windows"
+  ]
   revision = "35ef4487ce0a1ea5d4b616ffe71e34febe723695"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
+  packages = [
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "secure/bidirule",
+    "transform",
+    "unicode/bidi",
+    "unicode/cldr",
+    "unicode/norm",
+    "unicode/rangetable"
+  ]
   revision = "836efe42bb4aa16aaa17b9c155d8813d336ed720"
 
 [[projects]]
@@ -57,13 +130,37 @@
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [".","codes","connectivity","credentials","grpclb/grpc_lb_v1","grpclog","internal","keepalive","metadata","naming","peer","stats","status","tap","transport"]
-  revision = "b3ddf786825de56a4178401b7e174ee332173b66"
-  version = "v1.5.2"
+  packages = [
+    ".",
+    "balancer",
+    "balancer/base",
+    "balancer/roundrobin",
+    "codes",
+    "connectivity",
+    "credentials",
+    "encoding",
+    "grpclb/grpc_lb_v1/messages",
+    "grpclog",
+    "health/grpc_health_v1",
+    "internal",
+    "keepalive",
+    "metadata",
+    "naming",
+    "peer",
+    "resolver",
+    "resolver/dns",
+    "resolver/passthrough",
+    "stats",
+    "status",
+    "tap",
+    "transport"
+  ]
+  revision = "6b51017f791ae1cfbec89c52efdf444b13b550ef"
+  version = "v1.9.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c69d08375e3001853766cf5bdf85a77b36447740f1ef2b3f60e7f36f3cc7dee8"
+  inputs-digest = "1d07f1b50d31fb0549e3e5d53ac3c56cc7e0af27cdd16278e7efd1380e85d225"
   solver-name = "gps-cdcl"
   solver-version = 1
